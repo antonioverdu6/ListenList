@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lista de Artistas</title>
+</head>
+<body>
+    <h1>Artistas</h1>
+    <ul>
+        {% for artista in artistas %}
+            <li>
+                {{ artista.nombre }} — Valoración media: 
+                {% with valor=artista.valoracion_media %}
+                    {% if valor %}
+                        {{ valor|floatformat:1 }} / 5
+                    {% else %}
+                        Sin valoraciones
+                    {% endif %}
+                {% endwith %}
+            </li>
+        {% empty %}
+            <li>No hay artistas disponibles.</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

@@ -1,0 +1,439 @@
+/* === RESET BÁSICO === */
+body {
+    margin: 0;
+    padding: 2rem;
+    background: linear-gradient(135deg, #232526 0%, #414345 100%);
+    color: #f5f6fa;
+    font-family: 'Segoe UI', 'Montserrat', sans-serif;
+    min-height: 100vh;
+    letter-spacing: 0.02em;
+}
+
+/* TITULOS */
+.album-detalle h1, 
+.album-detalle h2, 
+.album-detalle h3 {
+    color: #1db954;
+    text-shadow: 0 2px 12px rgba(29,185,84,0.15);
+    font-family: 'Montserrat', 'Segoe UI', sans-serif;
+    margin-top: 0;
+}
+
+.album-detalle h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.3rem;
+}
+
+.album-detalle h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.album-detalle h3 {
+    font-size: 1.5rem;
+    margin-top: 2rem;
+    margin-bottom: 0.8rem;
+}
+
+/* IMAGEN DEL ÁLBUM */
+.album-detalle img {
+    max-width: 320px;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(29,185,84,0.10);
+    border: 2px solid #1db95444;
+    display: block;
+    margin-bottom: 1.5rem;
+    transition: transform 0.35s cubic-bezier(.25,.8,.25,1), filter 0.35s cubic-bezier(.25,.8,.25,1);
+}
+
+.album-detalle img:hover {
+    transform: scale(1.04) rotate(2deg);
+    filter: brightness(1.09) contrast(1.08) drop-shadow(0 4px 18px #1db95433);
+}
+
+/* INFO GENERAL */
+.album-detalle p {
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-bottom: 0.8rem;
+}
+
+/* LISTA DE CANCIONES */
+.album-detalle ol {
+    padding-left: 1.5rem;
+    color: #e0e0e0;
+    font-size: 1.1rem;
+}
+
+.album-detalle li {
+    margin-bottom: 0.6rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* LINK DE CANCION */
+.album-detalle li a {
+    color: #1db954;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.3s ease;
+}
+
+.album-detalle li a:hover {
+    color: #17a74a;
+    text-decoration: underline;
+}
+
+/* DURACION DE CANCION */
+.album-detalle li span {
+    font-size: 0.95rem;
+    color: #a0d8a0;
+    font-weight: 400;
+    min-width: 60px;
+    text-align: right;
+    margin-left: 1rem;
+}
+
+/* Contenedor título + botón */
+.header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    margin-bottom: 1rem;
+    margin-top: -0.7rem;
+}
+
+/* Usamos tu estilo de logo tal cual */
+.logo {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #1db954;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: -20px;
+}
+
+.logo span {
+    font-size: 0.9rem;
+    color: #fff;
+    background: #1db954;
+    border-radius: 6px;
+    padding: 0.1em 0.5em;
+    margin-left: 0.5em;
+    font-weight: 400;
+    opacity: 0.8;
+}
+
+/* Botón circular verde con animación */
+.menu-btn {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #1db954; /* verde vibrante principal */
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    z-index: 1101;
+    display: inline-block;
+    transition: border-color .25s ease, transform .18s ease;
+    position: absolute;
+    top: 20px;
+    right: 20px;
+}
+
+/* Cuando el menú está abierto */
+.menu-open .menu-btn {
+    position: fixed; /* fijo a la pantalla */
+    top: 20px;
+    right: 20px; /* justo pegado al menú abierto */
+    left: auto;   /* para evitar conflicto con 'right' */
+}
+
+/* Líneas que forman la X */
+.menu-btn::before,
+.menu-btn::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 22px;
+    height: 3px;
+    background: #1db954; /* verde vibrante principal */
+    border-radius: 2px;
+    transform-origin: center;
+    transform: translate(-50%, -50%) rotate(0deg) scaleX(0);
+    opacity: 0;
+    transition: transform .35s cubic-bezier(.2,.8,.2,1), opacity .2s;
+    pointer-events: none;
+}
+
+.menu-btn.active::before {
+    transform: translate(-50%, -50%) rotate(45deg) scaleX(1);
+    opacity: 1;
+}
+.menu-btn.active::after {
+    transform: translate(-50%, -50%) rotate(-45deg) scaleX(1);
+    opacity: 1;
+}
+
+/* Menú lateral reducido y animado */
+.side-menu {
+        position: fixed;
+        top: 0px;
+        right: -250px;
+        width: 250px;
+        background: linear-gradient(120deg, #232526 80%, #414345 100%);
+        backdrop-filter: blur(6px);
+        color: #f5f6fa;
+        transition: right 0.4s ease;
+        z-index: 1000;
+        padding: 15px 0;
+        height: auto;
+        border-radius: 0 0 0 12px;
+        box-shadow: 0 8px 32px rgba(29,185,84,0.13);
+        border-left: 2px solid #1db95444;
+}
+.side-menu.show {
+        right: 0;
+}
+
+.side-menu ul {
+        list-style: none;
+        padding: 0;
+}
+.side-menu ul li {
+        padding: 15px 20px;
+        border-bottom: 1px solid #414345;
+}
+.side-menu ul li:last-child {
+        border-bottom: none;
+}
+.side-menu ul li a {
+        color: #f5f6fa;
+        text-decoration: none;
+        font-size: 1.15rem;
+        transition: color 0.2s;
+}
+.side-menu ul li a:hover {
+        color: #1db954;
+}
+
+.side-menu.show .menu-btn.active {
+    right: 100px;  /* más pegado al borde del menú cuando abierto */
+    /* puedes ajustar 'right' o 'left' si quieres */
+}
+
+.album-columns {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+
+.album-info {
+    width: 70%;   /* Ocupa todo el ancho posible */
+    max-width: none; /* Elimina cualquier restricción */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding-right: 0;  /* Elimina espacio interno a la derecha */
+    margin-right: 0;   /* Elimina margen externo a la derecha */
+}
+
+
+/* Limita el tamaño de la imagen para que no sea gigante */
+.album-info img {
+    max-width: 320px;  /* Ajusta este valor a tu gusto */
+    width: 100%;
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(29,185,84,0.10);
+    border: 2px solid #1db95444;
+    display: block;
+    margin-bottom: 1.5rem;
+    transition: transform 0.35s cubic-bezier(.25,.8,.25,1), filter 0.35s cubic-bezier(.25,.8,.25,1);
+}
+
+.album-info img:hover {
+    transform: scale(1.04) rotate(2deg);
+    filter: brightness(1.09) contrast(1.08) drop-shadow(0 4px 18px #1db95433);
+}
+
+.album-info p {
+    font-size: 1.08rem;
+    font-weight: 400;
+    color: linear-gradient(90deg, #1db954 60%, #17a74a 100%);
+    background: -webkit-linear-gradient(90deg, #1db954 60%, #17a74a 100%);
+    margin-bottom: 0.7rem;
+    background: none;
+    border: none;
+    padding: 0;
+    letter-spacing: 0.01em;
+}
+.album-songs {
+    flex-grow: 1;
+    background: linear-gradient(120deg, #232526 80%, #1db95422 100%);
+    padding: 2rem 1.5rem 2rem 1rem;
+    border-radius: 22px;
+    box-shadow: 0 6px 32px rgba(29,185,84,0.13);
+    border: 2px solid #1db95455;
+    font-family: 'Montserrat', 'Segoe UI', sans-serif;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.album-songs h3 {
+    font-size: 2.6rem;
+    font-weight: 800;
+    color: #1db954;
+    text-shadow: 0 2px 16px rgba(29,185,84,0.18);
+    margin-bottom: 1.3rem;
+    margin-left: 1.5rem;
+    letter-spacing: 0.03em;
+}
+
+.album-songs ol {
+    padding-left: 1.5rem;
+    color: #e0e0e0;
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.album-songs li {
+    margin-bottom: 0.7rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.album-songs li a {
+    color: #1db954;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.25rem;
+    padding: 0.18em 0.7em;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #1db95422 60%, #17a74a11 100%);
+    box-shadow: 0 2px 12px rgba(29,185,84,0.08);
+    position: relative;
+    transition: 
+        color 0.3s,
+        background 0.3s,
+        box-shadow 0.3s,
+        transform 0.18s;
+}
+
+.album-songs li a::after {
+    content: '';
+    display: block;
+    position: absolute;
+    left: 10%;
+    bottom: 0;
+    width: 80%;
+    height: 2px;
+    background: linear-gradient(90deg, #1db954 60%, #17a74a 100%);
+    opacity: 0;
+    transform: scaleX(0.5);
+    transition: opacity 0.3s, transform 0.3s;
+    border-radius: 2px;
+}
+
+.album-songs li a:hover {
+    color: #17a74a;
+    background: linear-gradient(90deg, #1db95444 60%, #17a74a22 100%);
+    box-shadow: 0 4px 18px #1db95433;
+    transform: scale(1.06) rotate(-1deg);
+    text-decoration: none;
+}
+
+.album-songs li a:hover::after {
+    opacity: 1;
+    transform: scaleX(1);
+}
+
+.album-songs li span {
+    font-size: 1.15rem;
+    color: #a0d8a0;
+    font-weight: 500;
+    min-width: 60px;
+    text-align: right;
+    margin-left: 1rem;
+}
+
+.album-songs li .nota-media {
+    font-size: 1.15rem;
+    color: #a0d8a0;
+    font-weight: 500;
+    min-width: 70px;
+    text-align: center;
+    flex: 1;
+}
+
+
+/* Responsive: apilar columnas en pantallas pequeñas */
+@media (max-width: 768px) {
+    .album-columns {
+        grid-template-columns: 1fr;
+    }
+    
+    .album-info img {
+        max-width: 100%;
+        height: auto;
+        margin-bottom: 2rem;
+    }
+}
+
+.info-cancion .album {
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: #1db954;
+    text-shadow: 0 2px 16px rgba(29,185,84,0.18);
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.03em;
+}
+
+.info-cancion .duracion {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #a0d8a0;
+    margin-bottom: 0.3rem;
+}
+
+.info-cancion .fecha {
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: #8fbf8f;
+    margin-bottom: 0.3rem;
+}
+
+/* === ESTRELLAS DE VALORACIÓN === */
+.estrellas {
+    direction: rtl;
+    display: inline-flex;
+    gap: 0.2em;
+    filter: drop-shadow(0 2px 6px #1db95433);
+}
+
+.estrellas input[type="radio"] {
+    display: none;
+}
+
+.estrellas label {
+    font-size: 2.2rem;
+    color: #b2bec3;
+    cursor: pointer;
+    transition: color 0.2s, transform 0.2s;
+    padding: 0 0.05em;
+}
+
+.estrellas input[type="radio"]:checked ~ label,
+.estrellas label:hover,
+.estrellas label:hover ~ label {
+    color: #1db954;
+    transform: scale(1.15) rotate(-8deg);
+}

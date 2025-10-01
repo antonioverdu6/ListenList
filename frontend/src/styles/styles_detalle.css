@@ -1,0 +1,822 @@
+/* === RESET BÁSICO === */
+body {
+    margin: 0;
+    background: linear-gradient(135deg, #232526 0%, #414345 100%);
+    color: #f5f6fa;
+    font-family: 'Segoe UI', 'Montserrat', sans-serif;
+    min-height: 100vh;
+    letter-spacing: 0.02em;
+}
+
+h1, h2, h3 {
+    color: #1db954;
+    text-shadow: 0 2px 12px rgba(29,185,84,0.15);
+    font-family: 'Montserrat', 'Segoe UI', sans-serif;
+    font-size: 2.5rem;
+}
+
+h2 {
+    font-size: 2rem;
+    
+}
+
+h3 {
+    font-size: 1.5rem;
+}
+
+p {
+    color: #e0e0e0;
+    line-height: 1.6;
+}
+
+/* === BOTONES === */
+button {
+    background: linear-gradient(90deg, #1db954 60%, #17a74a 100%);
+    color: #fff;
+    border: none;
+    padding: 0.7rem 1.4rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0.7rem;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: bold;
+    font-family: inherit;
+    letter-spacing: 0.05em;
+    box-shadow: 0 4px 16px rgba(29,185,84,0.18);
+    transition: transform 0.2s, box-shadow 0.3s, background 0.3s;
+}
+
+button:hover {
+    background: linear-gradient(90deg, #17a74a 60%, #1db954 100%);
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 8px 24px rgba(23,167,74,0.25);
+}
+
+button:focus {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(29,185,84,0.25);
+}
+
+/* === FORMULARIO DE COMENTARIOS === */
+form#form-comentario,
+#nuevo-comentario-container form,
+.formulario-respuesta form {
+    background: linear-gradient(120deg, #414345 80%, #232526 100%);
+    padding: 1.2rem;
+    margin-top: 1rem;
+    border-radius: 18px;
+    box-shadow: 0 2px 12px rgba(65,67,69,0.12);
+    border: 1px solid #232526;
+}
+
+textarea {
+    width: 92%;
+    margin-top: 0.7rem;
+    padding: 0.8rem;
+    border: none;
+    border-radius: 12px;
+    resize: vertical;
+    background: #232526;
+    color: #f5f6fa;
+    font-size: 1rem;
+    margin-bottom: 0.8rem;
+    box-shadow: 0 1px 6px rgba(35,37,38,0.10);
+    transition: box-shadow 0.2s;
+}
+
+textarea:focus {
+    box-shadow: 0 0 0 3px #1db95455;
+}
+
+textarea::placeholder {
+    color: #b2bec3;
+    opacity: 0.8;
+}
+
+input[type="hidden"] {
+    display: none;
+}
+
+/* === COMENTARIOS Y RESPUESTAS === */
+#comentarios {
+    margin-top: 3rem;
+}
+
+.comentario,
+.respuesta {
+    background: linear-gradient(120deg, #414345 80%, #383a3f 100%);
+    border-radius: 14px;
+    padding: 1.1rem 1.2rem;
+    margin-bottom: 1.2rem;
+    box-shadow: 0 2px 10px rgba(65,67,69,0.10);
+    border-left: 4px solid #1db954;
+    position: relative;
+}
+
+.comentario p strong,
+.respuesta p strong {
+    color: #1db954;
+}
+
+
+.respuesta {
+    margin-left: 2.5rem;
+    background: linear-gradient(120deg, #383a3f 80%, #232526 100%);
+    border-left: 4px solid #17a74a;
+}
+
+/* === FORMULARIO DE RESPUESTA === */
+.formulario-respuesta {
+    margin-top: 1rem;
+    margin-left: 2.5rem;
+}
+
+/* === BOTONES ESPECIALES === */
+#btn-nuevo-comentario {
+    font-size: 1.3rem;
+    padding: 1rem 2rem;
+    border-radius: 999px;
+    margin-bottom: 2rem;
+    margin-top: 2rem;
+    display: inline-block;
+    box-shadow: 0 6px 24px rgba(29,185,84,0.25);
+    transition: transform 0.2s, box-shadow 0.3s;
+}
+
+#btn-nuevo-comentario:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 28px rgba(29,185,84,0.35);
+}
+
+#nuevo-comentario-container {
+    margin-bottom: 2.5rem;
+}
+
+
+.responder {
+    margin-top: 0.5rem;
+}
+
+.respuestas {
+    margin-top: 1rem;
+}
+
+.comentario-sticker {
+    background-color: #1db954;
+    color: #f5f6fa;
+    font-size: 1rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 12px;
+    font-weight: bold;
+    transform: rotate(-4deg);
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+    margin-left: 0.5rem;
+    transition: transform 0.2s;
+    display: inline-block;
+}
+
+.comentario-sticker:hover {
+    transform: rotate(4deg) scale(1.1);
+}
+
+/* === ESTRELLAS DE VALORACIÓN === */
+.estrellas {
+    direction: rtl;
+    display: inline-flex;
+    gap: 0.2em;
+    filter: drop-shadow(0 2px 6px #1db95433);
+}
+
+.estrellas input[type="radio"] {
+    display: none;
+}
+
+.estrellas label {
+    font-size: 2.2rem;
+    color: #b2bec3;
+    cursor: pointer;
+    transition: color 0.2s, transform 0.2s;
+    padding: 0 0.05em;
+}
+
+.estrellas input[type="radio"]:checked ~ label,
+.estrellas label:hover,
+.estrellas label:hover ~ label {
+    color: #1db954;
+    transform: scale(1.15) rotate(-8deg);
+}
+
+/* === IMAGEN DE PORTADA === */
+
+
+
+/* === LAYOUT: imagen | info en la fila 1; valoración | letra en la fila 2 === */
+.detalle-cancion {
+    display: grid;
+    grid-template-columns: auto 1fr; /* columna imagen / columna info */
+    grid-auto-rows: auto;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    align-items: start;
+}
+
+/* Asegurar posición de hijos */
+.detalle-cancion .imagen-cancion {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.detalle-cancion .info-cancion {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+/* Valoración (estrellas + texto) en la columna izquierda, debajo de la imagen */
+.valoracion-box {
+    grid-column: 1;
+    grid-row: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    align-items: flex-start;
+    padding: 0; /* o un padding pequeño si quieres que no se pegue demasiado */
+    background: none;
+    border: none;
+    box-shadow: none;
+}
+
+
+/* Letra se sitúa en la columna derecha (misma anchura que .info-cancion) */
+.detalle-cancion .letra-cancion {
+    grid-column: 2;
+    grid-row: 2;
+    /* anulamos márgenes previos que podían dejarla muy separada */
+    margin-top: 0;
+    margin-bottom: 0;
+    /* mantener la estética existente (ya tienes reglas para .letra-cancion) */
+}
+
+/* Si quieres que la caja de letra tenga exactamente la apariencia previa,
+   las reglas generales de .letra-cancion que ya tienes seguirán aplicando. */
+
+/* RESPONSIVE: en pantallas pequeñas apilar verticalmente */
+@media (max-width: 880px) {
+    .detalle-cancion {
+        grid-template-columns: 1fr; /* una columna */
+    }
+
+    .detalle-cancion .imagen-cancion,
+    .detalle-cancion .info-cancion,
+    .valoracion-box,
+    .detalle-cancion .letra-cancion {
+        grid-column: 1;
+        grid-row: auto;
+        width: 100%;
+    }
+
+    .valoracion-box {
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+    }
+}
+
+
+.imagen-cancion img {
+    max-width: 320px; /* igual que el img general */
+    border-radius: 18px;
+    margin-top: 0;
+    box-shadow: 0 4px 24px rgba(29,185,84,0.10);
+    border: 2px solid #1db95444;
+    transition: transform 0.35s cubic-bezier(.25,.8,.25,1), filter 0.35s cubic-bezier(.25,.8,.25,1);
+}
+
+.imagen-cancion img:hover {
+    transform: scale(1.04) rotate(2deg);
+    filter: brightness(1.09) contrast(1.08) drop-shadow(0 4px 18px #1db95433);
+    transition: transform 0.35s cubic-bezier(.25,.8,.25,1), filter 0.35s cubic-bezier(.25,.8,.25,1);
+}
+
+.info-cancion {
+    flex-grow: 1;
+    text-align: left;
+    color: #f5f6fa;
+    background: linear-gradient(120deg, #232526 80%, #1db95422 100%);
+    padding: 2rem 2.5rem;
+    border-radius: 22px;
+    box-shadow: 0 6px 32px rgba(29,185,84,0.13);
+    border: 2px solid #1db95455;
+    font-size: 1.35rem;
+    font-family: 'Montserrat', 'Segoe UI', sans-serif;
+    position: relative;   /* importante para posicionar canvas */
+    overflow: hidden;     /* para que las letras no se salgan */
+    z-index: 1;
+}
+
+.info-cancion p {
+    margin: 0.7rem 0;
+    line-height: 1.7;
+    font-size: 1.25rem;
+}
+
+.info-cancion .album {
+    font-size: 2.1rem;
+    font-weight: 800;
+    color: #1db954;
+    text-shadow: 0 2px 16px rgba(29,185,84,0.18);
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.03em;
+}
+
+.info-cancion .duracion {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #a0d8a0;
+    margin-bottom: 0.3rem;
+}
+
+.info-cancion .fecha {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: #8fbf8f;
+    margin-bottom: 0.3rem;
+}
+
+.falling-text-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible; /* Cambiado de hidden a visible */
+}
+
+
+.letra-dinamica {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #f5f6fa;
+    text-align: center;
+    user-select: none;
+    pointer-events: none;
+}
+
+
+.letra-cancion {
+    background: linear-gradient(120deg, #232526 85%, #1db95422 100%);
+    border-radius: 20px;
+    box-shadow: 0 6px 32px rgba(29,185,84,0.13);
+    border: 2px solid #1db95444;
+    padding: 2rem 2.5rem;
+    margin-top: 1.5rem;
+    margin-bottom: 2rem;
+    max-height: 870px;
+    overflow-y: auto;
+    color: #f5f6fa;
+    font-family: 'Montserrat', 'Segoe UI', sans-serif;
+    font-size: 1.25rem;
+    line-height: 1.7;
+    letter-spacing: 0.02em;
+    transition: box-shadow 0.3s;
+    padding-right: 3.5rem;
+    position: relative;
+}
+
+.letra-cancion h3 {
+    margin-top: 0;
+    margin-bottom: 1.2rem;
+    color: #1db954;
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-shadow: 0 2px 12px rgba(29,185,84,0.15);
+    letter-spacing: 0.03em;
+}
+
+.letra-cancion pre {
+    background: none;
+    border: none;
+    color: #f5f6fa;
+    font-family: inherit;
+    font-size: 1.15rem;
+    line-height: 1.7;
+    margin: 0;
+    padding: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.letra-cancion::-webkit-scrollbar {
+    width: 8px; /* un poco más ancho para mejor usabilidad */
+}
+
+.letra-cancion::-webkit-scrollbar-track {
+    background: transparent; /* transparente para que no se note mucho */
+}
+
+.letra-cancion::-webkit-scrollbar-thumb {
+    background-color: rgba(29, 185, 84, 0.5); /* verde vibrante translúcido */
+    border-radius: 12px;
+    border: 2px solid transparent; /* crea espacio para un efecto “padding” */
+}
+
+.letra-cancion::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(29, 185, 84, 0.8); /* más visible al hover */
+}
+
+/* Para Firefox (scrollbar fino y con color) */
+.letra-cancion {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(29, 185, 84, 0.5) transparent;
+}
+
+.letra-cancion:hover {
+    scrollbar-color: rgba(29, 185, 84, 0.8) transparent;
+}
+
+.flashcards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center; /* centra las tarjetas */
+}
+
+
+.flashcard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 150px;
+    text-decoration: none;
+    color: #f5f6fa;
+    background: linear-gradient(120deg, #232526 80%, #414345 100%);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(29,185,84,0.13);
+    border: 2px solid #1db95444;
+    transition: transform 0.2s, box-shadow 0.2s, background 0.3s;
+}
+
+.flashcard:hover {
+    transform: translateY(-4px) scale(1.04);
+    box-shadow: 0 8px 24px rgba(29,185,84,0.22);
+    background: linear-gradient(120deg, #414345 80%, #17a74a 100%);
+}
+
+.flashcard-img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    background: #232526;
+    border-bottom: 2px solid #1db95444;
+}
+
+.flashcard-img-placeholder {
+    width: 100%;
+    height: 150px;
+    background: #414345;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.95rem;
+    color: #b2bec3;
+}
+
+.flashcard-info {
+    padding: 0.7rem 0.5rem;
+    text-align: center;
+    background: linear-gradient(120deg, #232526 85%, #1db95422 100%);
+    width: 100%;
+}
+
+.flashcard-info h4 {
+    font-size: 1.08rem;
+    margin: 0.2rem 0;
+    color: #1db954;
+    font-family: 'Montserrat', 'Segoe UI', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-shadow: 0 2px 12px rgba(29,185,84,0.12);
+}
+
+.flashcard-info p {
+    font-size: 0.88rem;
+    color: #b2bec3;
+    margin: 0.15rem 0 0.1rem 0;
+    line-height: 1.5;
+}
+
+
+
+/* Usamos tu estilo de logo tal cual */
+.logo {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #1db954;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: -20px;
+}
+
+.logo span {
+    font-size: 0.9rem;
+    color: #fff;
+    background: #1db954;
+    border-radius: 6px;
+    padding: 0.1em 0.5em;
+    margin-left: 0.5em;
+    font-weight: 400;
+    opacity: 0.8;
+}
+
+/* Botón circular verde con animación */
+.menu-btn {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #1db954; /* verde vibrante principal */
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    z-index: 1101;
+    display: inline-block;
+    transition: border-color .25s ease, transform .18s ease;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+}
+
+/* Cuando el menú está abierto */
+.menu-open .menu-btn {
+    position: fixed; /* fijo a la pantalla */
+    top: 20px;
+    right: 20px; /* justo pegado al menú abierto */
+    left: auto;   /* para evitar conflicto con 'right' */
+}
+
+/* Líneas que forman la X */
+.menu-btn::before,
+.menu-btn::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 22px;
+    height: 3px;
+    background: #1db954; /* verde vibrante principal */
+    border-radius: 2px;
+    transform-origin: center;
+    transform: translate(-50%, -50%) rotate(0deg) scaleX(0);
+    opacity: 0;
+    transition: transform .35s cubic-bezier(.2,.8,.2,1), opacity .2s;
+    pointer-events: none;
+}
+
+.menu-btn.active::before {
+    transform: translate(-50%, -50%) rotate(45deg) scaleX(1);
+    opacity: 1;
+}
+.menu-btn.active::after {
+    transform: translate(-50%, -50%) rotate(-45deg) scaleX(1);
+    opacity: 1;
+}
+
+/* Menú lateral reducido y animado */
+.side-menu {
+        position: fixed;
+        opacity: 0.85;
+        right: -250px;
+        width: 250px;
+        background: linear-gradient(120deg, #232526 80%, #414345 100%);
+        backdrop-filter: blur(6px);
+        color: #f5f6fa;
+        transition: right 0.4s ease;
+        z-index: 1000;
+        padding: 15px 0;
+        height: auto;
+        border-radius: 0 0 0 12px;
+        box-shadow: 0 8px 32px rgba(29,185,84,0.13);
+        border-left: 2px solid #1db95444;
+}
+.side-menu.show {
+        right: 0;
+}
+
+.side-menu ul {
+        list-style: none;
+        padding: 0;
+}
+.side-menu ul li {
+        padding: 15px 20px;
+        border-bottom: 1px solid #414345;
+}
+.side-menu ul li:last-child {
+        border-bottom: none;
+}
+.side-menu ul li a {
+        color: #f5f6fa;
+        text-decoration: none;
+        font-size: 1.15rem;
+        transition: color 0.2s;
+}
+.side-menu ul li a:hover {
+        color: #1db954;
+}
+
+.side-menu.show .menu-btn.active {
+    right: 100px;  /* más pegado al borde del menú cuando abierto */
+    /* puedes ajustar 'right' o 'left' si quieres */
+}
+
+
+.album a {
+    text-decoration: none;  /* quita el subrayado */
+    color: inherit;         /* mantiene el color del texto */
+    transition: color 0.3s ease; /* para efecto suave al hover */
+}
+
+.album a:hover {
+    color: #1db954; /* verde vibrante */
+    font-size: 2.4rem;
+    text-shadow: 0 0 18px #1db95488, 0 2px 12px #fff8;
+    transform: scale(1.18) rotate(-3deg);
+    transition: color 0.25s, font-size 0.25s, text-shadow 0.25s, transform 0.25s;
+}
+
+
+.detalle-cancion-page {
+    padding: 2rem;
+}
+
+.header-bar .logo {
+    margin-left: 1rem; /* mueve todo el logo 1rem a la derecha */
+    height: 4rem;
+}
+
+
+
+/* LOGO */
+.logo {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #1db954;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.logo span {
+    font-size: 0.9rem;
+    color: #fff;
+    background: #1db954;
+    border-radius: 6px;
+    padding: 0.1em 0.5em;
+    margin-left: 0.5em;
+    font-weight: 400;
+    opacity: 0.8;
+}
+
+/* TOGGLE (derecha) */
+.toggle {
+    font-size: 1.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem 0.6rem;
+    border-radius: 8px;
+    transition: transform 0.2s, background 0.2s;
+}
+
+.toggle:hover {
+    transform: scale(1.1);
+    background: rgba(29,185,84,0.15);
+}
+
+/* RESPONSIVE: en móviles */
+@media (max-width: 600px) {
+    .header-bar {
+        padding: 0.6rem 1rem;
+    }
+
+    .logo {
+        font-size: 1.6rem;
+    }
+
+    .toggle {
+        font-size: 1.5rem;
+    }
+}
+
+
+
+
+
+.icono-editar,
+.icono-borrar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    transition: box-shadow 0.25s, background 0.2s;
+    margin-left: 0.3rem;
+    margin-right: 0.3rem;
+    outline: none;
+    border: none;
+    vertical-align: middle;
+}
+
+.icono-editar svg,
+.icono-borrar svg {
+    width: 22px;
+    height: 22px;
+    stroke: currentColor;
+    transition: color 0.22s, filter 0.22s;
+    z-index: 2;
+    pointer-events: none;
+    display: block;
+}
+
+.icono-editar {
+    color: #1db954;
+    box-shadow: 0 2px 10px rgba(29,185,84,0.10);
+}
+
+.icono-editar::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 60%;
+    transform: translate(-50%, -50%);
+    width: 28px;
+    height: 14px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, #1db95488 0%, #1db95400 80%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s, filter 0.28s;
+    z-index: 1;
+    filter: blur(2px);
+}
+
+.icono-editar:hover,
+.icono-editar:focus {
+    color: #1ffb7a;
+    box-shadow: 0 0 18px #1db95488, 0 2px 12px #1db95455;
+}
+
+.icono-editar:hover::after,
+.icono-editar:focus::after {
+    opacity: 1;
+    filter: blur(4px);
+}
+
+.icono-borrar {
+    color: #e74c3c;
+    box-shadow: 0 2px 10px rgba(231,76,60,0.10);
+}
+
+.icono-borrar::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 60%;
+    transform: translate(-50%, -50%);
+    width: 28px;
+    height: 14px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, #e74c3c88 0%, #e74c3c00 80%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s, filter 0.28s;
+    z-index: 1;
+    filter: blur(2px);
+}
+
+.icono-borrar:hover,
+.icono-borrar:focus {
+    color: #ff5f5f;
+    box-shadow: 0 0 18px #e74c3c88, 0 2px 12px #e74c3c55;
+}
+
+.icono-borrar:hover::after,
+.icono-borrar:focus::after {
+    opacity: 1;
+    filter: blur(4px);
+}
+
+/* Accesibilidad: outline visible al focus keyboard */
+.icono-editar:focus-visible,
+.icono-borrar:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}

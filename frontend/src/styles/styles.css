@@ -1,0 +1,281 @@
+/* ListenList - styles.css */
+/* Fuente principal */
+body {
+    font-family: 'Montserrat', Arial, sans-serif;
+    background: linear-gradient(135deg, #232526 0%, #414345 100%);
+    color: #f5f6fa;
+    margin: 0;
+    min-height: 100vh;
+}
+
+/* Header */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(30, 30, 40, 0.95);
+    padding: 1.2rem 2.5rem;
+    box-shadow: 0 2px 16px 0 rgba(0,0,0,0.12);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.logo {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #1db954;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.logo span {
+    font-size: 0.9rem;
+    color: #fff;
+    background: #1db954;
+    border-radius: 6px;
+    padding: 0.1em 0.5em;
+    margin-left: 0.5em;
+    font-weight: 400;
+    opacity: 0.8;
+}
+
+nav a {
+    color: #f5f6fa;
+    text-decoration: none;
+    margin-left: 2rem;
+    font-weight: 500;
+    font-size: 1.1rem;
+    transition: color 0.2s;
+    position: relative;
+}
+
+nav a::after {
+    content: '';
+    display: block;
+    width: 0;
+    height: 2px;
+    background: #1db954;
+    transition: width 0.2s;
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+}
+
+nav a:hover {
+    color: #1db954;
+}
+
+nav a:hover::after {
+    width: 100%;
+}
+
+/* Hero Section */
+.hero {
+    text-align: center;
+    padding: 4.5rem 1.5rem 3rem 1.5rem;
+    background: linear-gradient(120deg, #1db954 0%, #232526 100%);
+    border-radius: 0 0 32px 32px;
+    box-shadow: 0 4px 32px 0 rgba(30,185,84,0.08);
+    margin-bottom: 2.5rem;
+}
+
+.hero h1 {
+    font-size: 2.6rem;
+    font-weight: 700;
+    margin-bottom: 1.2rem;
+    color: #fff;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 12px rgba(30,185,84,0.12);
+}
+
+.hero p {
+    font-size: 1.25rem;
+    color: #e0e0e0;
+    margin-bottom: 2.2rem;
+    line-height: 1.6;
+}
+
+/* Search Box */
+.search-box {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.7rem;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.search-box input[type="text"] {
+    flex: 1;
+    padding: 0.9em 1.2em;
+    border: none;
+    border-radius: 24px;
+    font-size: 1.1rem;
+    background: #fff;
+    color: #232526;
+    outline: none;
+    box-shadow: 0 2px 8px 0 rgba(30,185,84,0.08);
+    transition: box-shadow 0.2s;
+}
+
+.search-box input[type="text"]:focus {
+    box-shadow: 0 0 0 2px #1db95455;
+}
+
+.search-box button {
+    padding: 0.9em 2em;
+    border: none;
+    border-radius: 24px;
+    background: #1db954;
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 8px 0 rgba(30,185,84,0.12);
+    transition: background 0.2s, transform 0.1s;
+}
+
+.search-box button:hover {
+    background: #17a74a;
+    transform: translateY(-2px) scale(1.03);
+}
+
+/* Features Section */
+.features {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin: 2.5rem auto 2rem auto;
+    max-width: 1100px;
+    flex-wrap: wrap;
+}
+
+.feature-card {
+    background: rgba(40, 44, 52, 0.98);
+    border-radius: 18px;
+    box-shadow: 0 2px 16px 0 rgba(30,185,84,0.07);
+    padding: 2rem 1.5rem;
+    flex: 1 1 260px;
+    min-width: 260px;
+    max-width: 340px;
+    margin: 0.5rem 0;
+    text-align: center;
+    transition: transform 0.18s, box-shadow 0.18s;
+    border: 1.5px solid transparent;
+}
+
+.feature-card:hover {
+    transform: translateY(-6px) scale(1.03);
+    box-shadow: 0 8px 32px 0 rgba(30,185,84,0.13);
+    border-color: #1db95455;
+}
+
+.feature-card h3 {
+    font-size: 1.35rem;
+    color: #1db954;
+    margin-bottom: 0.7rem;
+    font-weight: 700;
+}
+
+.feature-card p {
+    color: #e0e0e0;
+    font-size: 1.05rem;
+    line-height: 1.5;
+}
+
+/* How it works */
+.how-it-works {
+    background: rgba(30, 30, 40, 0.96);
+    border-radius: 24px;
+    max-width: 700px;
+    margin: 3rem auto 2.5rem auto;
+    padding: 2.5rem 2rem 2rem 2rem;
+    box-shadow: 0 2px 16px 0 rgba(30,185,84,0.08);
+}
+
+.how-it-works h2 {
+    color: #1db954;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 1.2rem;
+    text-align: center;
+}
+
+.how-it-works ol {
+    color: #f5f6fa;
+    font-size: 1.13rem;
+    line-height: 1.7;
+    padding-left: 1.3em;
+}
+
+.how-it-works li {
+    margin-bottom: 0.7em;
+}
+
+.how-it-works strong {
+    color: #1db954;
+    font-weight: 700;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    color: #b2bec3;
+    font-size: 1rem;
+    padding: 2.2rem 1rem 1.2rem 1rem;
+    background: none;
+    margin-top: 2.5rem;
+    letter-spacing: 0.2px;
+}
+
+/* Responsive Design */
+@media (max-width: 900px) {
+    .features {
+        flex-direction: column;
+        align-items: center;
+        gap: 1.2rem;
+    }
+    .feature-card {
+        max-width: 95vw;
+    }
+}
+
+@media (max-width: 600px) {
+    header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 1rem 1.2rem;
+    }
+    .logo {
+        font-size: 1.4rem;
+    }
+    nav {
+        margin-top: 0.7rem;
+        width: 100%;
+    }
+    nav a {
+        margin-left: 1.1rem;
+        font-size: 1rem;
+    }
+    .hero {
+        padding: 2.5rem 0.7rem 1.7rem 0.7rem;
+        border-radius: 0 0 18px 18px;
+    }
+    .hero h1 {
+        font-size: 1.5rem;
+    }
+    .features {
+        margin: 1.2rem auto 1rem auto;
+    }
+    .how-it-works {
+        padding: 1.2rem 0.7rem 1rem 0.7rem;
+        border-radius: 12px;
+    }
+    footer {
+        font-size: 0.95rem;
+        padding: 1.2rem 0.5rem 0.8rem 0.5rem;
+    }
+}

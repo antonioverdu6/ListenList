@@ -1,0 +1,88 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Detalles de {{ album.titulo }}</title>
+    <link rel="stylesheet" href="{% static 'musica/styles_album.css' %}">
+</head>
+<body>
+    <header class="header-bar">
+        <div class="logo">
+            ListenList <span>beta</span>
+        </div>
+        <div id="menu-toggle" class="menu-btn"></div>
+    </header>
+
+    <nav id="side-menu" class="side-menu">
+        <div id="menu-toggle" class="menu-btn"></div>
+        <ul>
+            <li><a href="{% url 'inicio' %}">Inicio</a></li>
+            <li><a href="#">Mi Perfil</a></li>
+            <li><a href="#">ListenList Plus</a></li>
+            <li><a href="#">Configuración</a></li>
+        </ul>
+    </nav>
+
+    <main class="album-detalle">
+        <h1 class="album-title">{{ album.titulo }}</h1>
+        <h2>Artista: {{ album.artista.nombre }}</h2>
+        <div class="album-columns">
+            <div class="album-info">
+            {% if album.imagen_url %}
+                <img src="{{ album.imagen_url }}" alt="Portada de {{ album.titulo }}">
+            {% else %}
+                <p><em>Sin imagen disponible</em></p>
+            {% endif %}
+
+            <div class="valoracion-box">
+                <div class="estrellas" id="estrellas-album-{{ album.id }}" data-album-id="{{ album.id }}">
+                    {% for i in stars_range %}
+                        <input
+                            type="radio"
+                            id="star-album-{{ album.id }}-{{ i }}"
+                            name="puntuacion-album-{{ album.id }}"
+                            value="{{ i }}"
+                            {% if user_rating == i %}checked{% endif %}
+                        />
+                        <label for="star-album-{{ album.id }}-{{ i }}">&#9733;</label>
+                    {% endfor %}
+                </div>
+                <p class="avg">
+                    Valoración media: {{ avg_puntuacion|floatformat:1 }} ({{ count_puntuacion }} votos)
+                </p>
+            </div>
+
+            <div class="info-cancion">
+                <p class="album"><strong>Número de canciones:</strong> {{ num_canciones }}</p>
+                <p class="duracion"><strong>Duración total:</strong> {{ duracion_formateada }}</p>
+                <p class="fecha"><strong>Fecha de lanzamiento:</strong> {{ fecha_formateada }}</p>
+            </div>
+            
+
+            </div>
+
+            <div class="album-songs">
+            <h3>Canciones</h3>
+            <ol>
+                {% for cancion in canciones %}
+                    <li>
+                        <a href="{% url 'musica:detalle_cancion' cancion.spotify_id %}">{{ cancion.titulo }}</a>
+                        <span class="nota-media">
+                            {% if cancion.avg_puntuacion %}
+                                {{ cancion.avg_puntuacion|floatformat:1 }} ({{ cancion.count_puntuacion }} votos)
+                            {% else %}
+                                Sin valoraciones
+                            {% endif %}
+                        </span>
+                        <span class="duracion">{{ cancion.duracion_formateada }}</span>
+                    </li>
+                {% endfor %}
+            </ol>
+            </div>
+        
+
+    </main>
+    <script src="{% static 'musica/detalle_album.js' %}"></script>
+</body>
+</html>

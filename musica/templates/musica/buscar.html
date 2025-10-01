@@ -1,0 +1,41 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Buscar Canción</title>
+    <link rel="stylesheet" href="{% static 'musica/styles_buscar.css' %}">
+</head>
+<body>
+    <form method="get" class="search-form">
+        <a href="{% url 'musica:inicio' %}" class="search-button">Volver</a>
+        <input type="text" name="q" placeholder="Buscar canción..." value="{{ query }}" class="search-input">
+        <button type="submit" class="search-button">Buscar</button>
+    </form>
+
+    <div class="song-grid">
+        {% for cancion in resultados %}
+            {% if cancion.spotify_id and cancion.nombre %}
+                <div class="song-tile">
+                    <a href="{% url 'musica:detalle_cancion' cancion.spotify_id %}" class="song-link">
+                        <div class="song-cover">
+                            <img src="{{ cancion.imagen }}" alt="Portada de {{ cancion.nombre }}">
+                            {% if cancion.preview_url %}
+                                <audio controls src="{{ cancion.preview_url }}" class="song-audio"></audio>
+                            {% endif %}
+                        </div>
+                        <div class="song-info">
+                            <h2 class="song-title" title="{{ cancion.nombre }}">{{ cancion.nombre_trunc }}</h2>
+                            <p class="song-artist">{{ cancion.artista }}</p>
+                            <p class="song-album">Álbum: <span title="{{ cancion.album }}">{{ cancion.album_trunc }}</span></p>
+                        </div>
+                    </a>
+                    <a href="https://open.spotify.com/track/{{ cancion.spotify_id }}" target="_blank" class="spotify-link">
+                        <span class="spotify-icon"></span> Escuchar en Spotify
+                    </a>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+</body>
+</html>

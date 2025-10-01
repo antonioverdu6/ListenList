@@ -1,0 +1,150 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Detalles de {{ cancion.titulo }}</title>
+    <link rel="stylesheet" href="{% static 'musica/styles_detalle.css' %}">
+</head>
+<body>
+    <header class="header-bar">
+        <div class="logo">
+            ListenList <span>beta</span>
+        </div>
+        <div id="menu-toggle" class="menu-btn"></div>
+    </header>
+
+    <nav id="side-menu" class="side-menu">
+        <div id="menu-toggle" class="menu-btn"></div>
+        <ul>
+            <li><a href="{% url 'inicio' %}">Inicio</a></li>
+            <li><a href="#">Mi Perfil</a></li>
+            <li><a href="#">ListenList Plus</a></li>
+            <li><a href="#">Configuración</a></li>
+        </ul>
+    </nav>
+
+    <h1>{{ cancion.titulo }}</h1>
+    <h2>Artista: {{ cancion.album.artista.nombre }}</h2>
+
+    <div class="detalle-cancion">
+        {% if cancion.album.imagen_url %}
+            <div class="imagen-cancion">
+                <img src="{{ cancion.album.imagen_url }}" alt="Portada de {{ cancion.album.titulo }}" />
+            </div>
+        {% else %}
+            <div class="imagen-cancion">
+                <p><em>Sin imagen disponible</em></p>
+            </div>
+        {% endif %}
+
+        <!-- Info principal: NO TOCAR su contenido (se mantiene igual) -->
+        <div class="info-cancion">
+            <p class="album">Álbum: <a href="{% url 'musica:detalle_album' cancion.album.id %}">{{ cancion.album.titulo }}</a></p>
+            <p class="duracion">Duración: {{ duracion_formateada }}</p>
+            <p class="fecha">Fecha de lanzamiento: {{ fecha_formateada }}</p>
+        </div>
+
+        <!-- VALORACIÓN: irá en la columna izquierda, fila 2 -->
+        <!-- VALORACIÓN: irá en la columna izquierda, fila 2 -->
+        <div class="valoracion-box">
+            <div
+            class="estrellas"
+            id="estrellas"
+            data-cancion-id="{{ cancion.id }}"
+            data-url="{% url 'musica:valorar_cancion' cancion.id %}">
+            {% for i in stars_range %}
+                <input
+                type="radio"
+                id="star{{ i }}"
+                name="puntuacion"
+                value="{{ i }}"
+                {% if user_rating == i %}checked{% endif %}
+                />
+                <label for="star{{ i }}">&#9733;</label>
+            {% endfor %}
+            </div>
+            <p class="avg" id="avg-valoracion">
+             Valoración media: {{ avg_puntuacion|floatformat:1 }} ({{ count_puntuacion }} votos)
+            </p>
+
+
+            <!-- Aquí van las canciones recomendadas -->
+            <section class="recomendaciones">
+                <h3>Canciones recomendadas</h3>
+                <div class="flashcards-container">
+                    {% for rec in canciones_recomendadas %}
+                    <a href="{% url 'musica:detalle_cancion' rec.spotify_id %}" class="flashcard">
+                    {% if rec.album.imagen_url %}
+                    <img src="{{ rec.album.imagen_url }}" alt="Portada de {{ rec.album.titulo }}" class="flashcard-img">
+                    {% else %}
+                    <div class="flashcard-img-placeholder">Sin imagen</div>
+                    {% endif %}
+                    <div class="flashcard-info">
+                        <h4>{{ rec.titulo_trunc }}</h4>
+                        <p>{{ rec.album.artista.nombre }}</p>
+                    </div>
+                    </a>
+                    {% empty %}
+                        <p>No hay canciones recomendadas disponibles.</p>
+                    {% endfor %}
+                </div>
+            </section>
+
+
+        </div>
+
+
+        <!-- LETRA: irá en la columna derecha, fila 2 (misma anchura que .info-cancion) -->
+        {% if letra %}
+            <div class="letra-cancion">
+                <h3>Letra</h3>
+                <pre style="white-space: pre-wrap;">{{ letra|safe }}</pre>
+            </div>
+        {% else %}
+            <div class="letra-cancion">
+                <h3>Letra</h3>
+                <p>No se encontró la letra de esta canción.</p>
+            </div>
+        {% endif %}
+    </div>
+    <!-- Sección de comentarios con hilos -->
+    <section id="comentarios">
+        <h3>Comentarios <span class="comentario-sticker">({{ comentarios.count }})</span></h3>
+
+        <button id="btn-nuevo-comentario">Comentar...</button>
+        <div id="nuevo-comentario-container"></div>
+
+        {% for comentario in comentarios %}
+            <article class="comentario">
+                <p><strong>{{ comentario.autor }}</strong> dijo:</p>
+                <p>{{ comentario.texto }}</p>
+                <button class="responder" data-id="{{ comentario.id }}">Responder</button>
+
+                <div class="respuestas">
+                    {% for respuesta in comentario.respuestas.all %}
+                        <article class="respuesta">
+                            <p><strong>{{ respuesta.autor }}</strong> respondió:</p>
+                            <p>{{ respuesta.texto }}</p>
+                        </article>
+                    {% endfor %}
+                </div>
+
+                <!-- Contenedor donde irá el formulario de respuesta dinámico -->
+                <div class="formulario-respuesta" data-container-id="{{ comentario.id }}"></div>
+            </article>
+        {% empty %}
+            <p>No hay comentarios aún.</p>
+        {% endfor %}
+    </section>
+
+    <!-- Formulario oculto reutilizable -->
+    <form id="form-comentario" method="post" action="{% url 'musica:agregar_comentario_cancion' cancion.id %}" style="display: none;">
+        {% csrf_token %}
+        <textarea name="texto" placeholder="Escribe tu comentario..." required></textarea>
+        <input type="hidden" name="parent_id" value="" />
+        <button type="submit">Publicar</button>
+    </form>
+    <script src="{% static 'musica/detalle_cancion.js' %}"></script>
+</body>
+</html>

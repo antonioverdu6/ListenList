@@ -1,0 +1,119 @@
+/* forms.css - Modern Login Component Styles */
+
+body {
+    background: linear-gradient(135deg, #232526 0%, #414345 100%);
+    min-height: 100vh;
+    margin: 0;
+    font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+}
+
+.login-page {
+    background: rgba(35, 37, 38, 0.95);
+    box-shadow: 0 8px 32px 0 rgba(29, 185, 84, 0.15), 0 1.5px 8px 0 rgba(23, 167, 74, 0.10);
+    border-radius: 18px;
+    max-width: 370px;
+    margin: 48px auto;
+    padding: 40px 32px 32px 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.login-page h2 {
+    color: #f5f6fa;
+    margin-bottom: 24px;
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.login-page form {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-bottom: 18px;
+}
+
+.login-page input[type="text"],
+.login-page input[type="password"] {
+    background: #414345;
+    color: #f5f6fa;
+    border: 1.5px solid #1db954;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    box-shadow: 0 2px 8px 0 rgba(29, 185, 84, 0.08);
+}
+
+.login-page input[type="text"]:focus,
+.login-page input[type="password"]:focus {
+    border-color: #17a74a;
+    box-shadow: 0 0 0 2px rgba(29, 185, 84, 0.18);
+}
+
+.login-page button[type="submit"] {
+    background: linear-gradient(90deg, #1db954 60%, #17a74a 100%);
+    color: #f5f6fa;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 0;
+    font-size: 1.08rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 16px 0 rgba(29, 185, 84, 0.18);
+    transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+
+.login-page button[type="submit"]:hover,
+.login-page button[type="submit"]:focus {
+    background: linear-gradient(90deg, #17a74a 60%, #1db954 100%);
+    box-shadow: 0 6px 24px 0 rgba(29, 185, 84, 0.28);
+    transform: translateY(-2px) scale(1.03);
+}
+
+.login-page p {
+    color: #e0e0e0;
+    font-size: 0.98rem;
+    margin-top: 8px;
+    text-align: center;
+}
+
+.login-page a {
+    color: #1db954;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.login-page a:hover,
+.login-page a:focus {
+    color: #17a74a;
+    text-decoration: underline;
+}
+
+.login-page [style*="color: red"] {
+    color: #ff4d4f !important;
+    background: rgba(255, 77, 79, 0.08);
+    border-radius: 8px;
+    padding: 8px 0;
+    margin-bottom: 10px;
+    font-size: 0.98rem;
+    text-align: center;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+    .login-page {
+        max-width: 95vw;
+        padding: 28px 10vw 24px 10vw;
+    }
+    .login-page h2 {
+        font-size: 1.4rem;
+    }
+    .login-page form {
+        gap: 12px;
+    }
+}
