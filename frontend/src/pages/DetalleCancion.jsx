@@ -5,6 +5,7 @@ import { useParams, Link } from "react-router-dom";
 
 
 
+
 function DetalleCancion() {
   const { spotifyId } = useParams();
   const [cancion, setCancion] = useState(null);
@@ -22,7 +23,7 @@ function DetalleCancion() {
   const [error, setError] = useState(null);
   const [comentarioEditando, setComentarioEditando] = useState(null);
   const [textoEditando, setTextoEditando] = useState("");
-
+  
   const fetchCancion = useCallback(async () => {
     try {
       // Pedimos la canción usando spotifyId
@@ -41,12 +42,15 @@ function DetalleCancion() {
       setCancionesRecomendadas(data.cancionesRecomendadas ?? []);
       setLetra(data.letra ?? "");
       setError(null);
+      console.log("Spotify ID del álbum:", data.album.spotify_id);
+
     } catch (err) {
       console.error(err);
       setError(err.message);
       setCancion(null);
     }
   }, [spotifyId]);
+
 
 
   const fetchRating = useCallback(async () => {
@@ -79,7 +83,7 @@ function DetalleCancion() {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/musica/cancion/${cancion?.id}/valorar/`,
+        `http://127.0.0.1:8000/api/cancion/${cancion.id}/valorar/`,
         {
           method: "POST",
           headers: {
@@ -327,9 +331,7 @@ function DetalleCancion() {
             <p className="album">
               Álbum:{" "}
               {cancion.album ? (
-                <Link to={`/album/${cancion.album?.spotify_id}`}>
-                  {cancion.album.titulo}
-                </Link>
+                <Link to={`/album/${cancion.album.spotify_id}`}>{cancion.album.titulo}</Link>
               ) : (
                 "Desconocido"
               )}

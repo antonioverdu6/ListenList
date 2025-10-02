@@ -11,7 +11,7 @@ from django.utils import timezone
 from .audd_api import obtener_letra
 from datetime import date, timedelta
 from .utils import formatear_fecha, normalizar_fecha, formatear_duracion
-from .serializers import ArtistaSerializer, AlbumSerializer, CancionSerializer, ListaMusicalSerializer
+from .serializers import ArtistaSerializer, AlbumSerializer, CancionSerializer, ListaMusicalSerializer, AlbumDetailSerializer
 from rest_framework import generics
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.contrib.auth.models import User
@@ -156,9 +156,9 @@ def inicio(request):
 
 
 @ensure_csrf_cookie
-def detalle_cancion(request, spotify_id):
-    cancion = get_or_create_cancion(spotify_id)
-
+def detalle_cancion(request, spotify_id): # ← Recibe spotify_id correctamente
+    cancion = get_or_create_cancion(spotify_id) # ← Usa get_or_create_cancion
+    
     # Normalizar fecha
     if cancion.album and cancion.album.fecha_lanzamiento:
         fecha_normalizada = normalizar_fecha(cancion.album.fecha_lanzamiento)
@@ -211,16 +211,18 @@ def detalle_cancion(request, spotify_id):
             "titulo": rec.titulo,
             "titulo_trunc": rec.titulo[:12] + "..." if len(rec.titulo) > 15 else rec.titulo,
             "album": {
-                "id": rec.album.id,
-                "titulo": rec.album.titulo,
-                "imagen_url": rec.album.imagen_url,
+                "id": cancion.album.id,
+                "titulo": cancion.album.titulo,
+                "imagen_url": cancion.album.imagen_url,
+                "spotify_id": cancion.album.spotify_id,  # ← AGREGAR ESTA LÍNEA
                 "artista": {
-                    "id": rec.album.artista.id,
-                    "nombre": rec.album.artista.nombre,
+                    "id": cancion.album.artista.id,
+                    "nombre": cancion.album.artista.nombre,
                 },
             },
         })
 
+    # Construcción de JSON final
     # Construcción de JSON final
     data = {
         "id": cancion.id,
@@ -237,6 +239,7 @@ def detalle_cancion(request, spotify_id):
             "id": cancion.album.id,
             "titulo": cancion.album.titulo,
             "imagen_url": cancion.album.imagen_url,
+            "spotify_id": cancion.album.spotify_id,  # ← AGREGAR ESTA LÍNEA
             "artista": {
                 "id": cancion.album.artista.id,
                 "nombre": cancion.album.artista.nombre,
@@ -244,6 +247,7 @@ def detalle_cancion(request, spotify_id):
         },
         "cancionesRecomendadas": canciones_recomendadas,
     }
+
 
     return JsonResponse(data)
 
@@ -331,47 +335,45 @@ def agregar_comentario_cancion(request, cancion_id):
     return JsonResponse({"error": "Método no permitido"}, status=405)
 
 
-
-
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def valorar_cancion(request, cancion_id):
     cancion = get_object_or_404(Cancion, id=cancion_id)
     puntuacion = request.data.get("puntuacion")
+    if puntuacion is None:
+        return Response({"error": "Falta la puntuación"}, status=400)
 
-    try:
-        puntuacion = int(puntuacion)
-    except (TypeError, ValueError):
-        return Response({"error": "Puntuación inválida"}, status=status.HTTP_400_BAD_REQUEST)
-
-    if not (1 <= puntuacion <= 5):
-        return Response({"error": "La puntuación debe estar entre 1 y 5"}, status=status.HTTP_400_BAD_REQUEST)
-
-    valoracion, created = ValoracionCancion.objects.get_or_create(
-        autor=request.user,
+    # Guardar o actualizar la valoración
+    valoracion_obj, created = ValoracionCancion.objects.update_or_create(
         cancion=cancion,
+        autor=request.user,
         defaults={"puntuacion": puntuacion}
     )
 
-    if not created:
-        valoracion.puntuacion = puntuacion
-        valoracion.save()
+    # Recalcular estadísticas
+    from django.db.models import Avg, Count
+    qs = ValoracionCancion.objects.filter(cancion=cancion)
+    avg_puntuacion = qs.aggregate(Avg("puntuacion"))["puntuacion__avg"] or 0
+    count_puntuacion = qs.count()
 
-    return Response(
-        {
-            "success": True,
-            "puntuacion": valoracion.puntuacion,
-            "cancion_id": cancion.id,
-            "autor": request.user.username,
-        },
-        status=status.HTTP_200_OK,
-    )
+    # Generar nuevos tokens
+    refresh = RefreshToken.for_user(request.user)
+    access_token = str(refresh.access_token)
+    refresh_token = str(refresh)
+
+    return Response({
+        "puntuacion": valoracion_obj.puntuacion,
+        "avgRating": round(avg_puntuacion, 1),
+        "countRating": count_puntuacion,
+        "access": access_token,
+        "refresh": refresh_token
+    })
 
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
-def valorar_album(request, album_id):
-    album = get_object_or_404(Album, id=album_id)
+def valorar_album(request, spotify_id):
+    album = get_object_or_404(Album, spotify_id=spotify_id)
     puntuacion = request.data.get("puntuacion")
 
     try:
@@ -492,17 +494,14 @@ class CancionDetailAPI(generics.RetrieveAPIView):
 
 class AlbumDetailAPI(generics.RetrieveAPIView):
     queryset = Album.objects.all()
-    serializer_class = AlbumSerializer
-    lookup_field = 'spotify_id'
+    serializer_class = AlbumDetailSerializer   # <-- usa el serializer completo
+    lookup_field = "spotify_id"                # <-- buscará por spotify_id
 
-    # Añade esto para que DRF use `album_id` de la URL
-    def get_object(self, album_hash):
-        return Album.objects.get(hash=album_hash)
-    
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        context['request'] = self.request  # <- clave para userRating
+        context['request'] = self.request  # para userRating
         return context
+
 
 
 

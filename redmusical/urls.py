@@ -33,6 +33,5 @@ urlpatterns = [
     path("api/register/", musica_views.registro, name="register"),  
     path("api/login/", TokenObtainPairView.as_view(), name="login"),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
-
     ]
 

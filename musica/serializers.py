@@ -1,3 +1,4 @@
+from datetime import timedelta
 from rest_framework import serializers
 from .models import Genero, Artista, Album, Cancion, ListaMusical, ComentarioCancion, Valoracion
 from django.db import models
@@ -43,12 +44,11 @@ class ListaMusicalSerializer(serializers.ModelSerializer):
 
 
 class AlbumNestedSerializer(serializers.ModelSerializer):
-    from .models import Artista
     artista = serializers.StringRelatedField()
-
     class Meta:
         model = Album
-        fields = ['id', 'titulo', 'imagen_url', 'artista']
+        fields = ['id', 'titulo', 'imagen_url', 'artista', 'spotify_id']
+
 
 class ArtistaNestedSerializer(serializers.ModelSerializer):
     class Meta:
@@ -102,17 +102,19 @@ class AlbumDetailSerializer(serializers.ModelSerializer):
     avgPuntuacion = serializers.SerializerMethodField()
     countPuntuacion = serializers.SerializerMethodField()
     userRating = serializers.SerializerMethodField()
+    duracion_formateada = serializers.SerializerMethodField()  # ✅ Agregado
+    num_canciones = serializers.SerializerMethodField()  # ✅ Agregado
 
     class Meta:
         model = Album
         fields = [
-            'id', 'titulo', 'artista', 'fecha_lanzamiento', 'bio', 'imagen_url',
-            'canciones', 'avgPuntuacion', 'countPuntuacion', 'userRating'
-        ]
+            'id', 'spotify_id', 'titulo', 'artista', 'fecha_lanzamiento', 'bio', 'imagen_url',
+            'canciones', 'avgPuntuacion', 'countPuntuacion', 'userRating',
+            'duracion_formateada', 'num_canciones']
 
     def get_canciones(self, obj):
+        canciones = obj.canciones.all()
         from .serializers import CancionSerializer
-        canciones = obj.cancion_set.all()  # todas las canciones del álbum
         serializer = CancionSerializer(canciones, many=True, context=self.context)
         return serializer.data
 
@@ -132,3 +134,26 @@ class AlbumDetailSerializer(serializers.ModelSerializer):
             valoracion = ValoracionAlbum.objects.filter(album=obj, autor=request.user).first()
             return valoracion.puntuacion if valoracion else None
         return None
+    
+    def get_duracion_formateada(self, obj):
+        """Calcula y formatea la duración total del álbum"""
+        from .utils import formatear_duracion  # ✅ Importa desde utils
+        
+        canciones = obj.canciones.all()
+        
+        # Sumar todas las duraciones
+        duracion_total = sum(
+            (c.duracion for c in canciones if c.duracion), 
+            timedelta()
+        )
+        
+        # Si no hay duración, retornar None
+        if duracion_total.total_seconds() == 0:
+            return None
+        
+        # Usar la función de utils
+        return formatear_duracion(duracion_total)
+    
+    def get_num_canciones(self, obj):
+        """Retorna el número de canciones del álbum"""
+        return obj.canciones.count()

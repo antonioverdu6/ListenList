@@ -4,40 +4,51 @@ import { useParams, Link } from "react-router-dom";
 import { refreshAccessToken } from "../utils/auth";
 
 function DetalleAlbum() {
-    const { albumId } = useParams();
-    const [album, setAlbum] = useState(null);
-    const [userRating, setUserRating] = useState(null);
-    const [avgRating, setAvgRating] = useState(0);
-    const [countRating, setCountRating] = useState(0);
-    const [canciones, setCanciones] = useState([]);
-    const [menuOpen, setMenuOpen] = useState(false);
-    const [error, setError] = useState(null);
+  const { spotify_id } = useParams();
 
-    // --- Fetch del álbum ---
-    const fetchAlbum = useCallback(async () => {
-        try {
-            const response = await fetch(`http://127.0.0.1:8000/musica/api/album/${albumId}/`);
-            if (!response.ok) throw new Error("Error cargando álbum");
-            const data = await response.json();
+  // --- Hooks declarados primero ---
+  const [album, setAlbum] = useState(null);
+  const [canciones, setCanciones] = useState([]);
+  const [userRating, setUserRating] = useState(null);
+  const [avgRating, setAvgRating] = useState(0);
+  const [countRating, setCountRating] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [error, setError] = useState(null);
 
-            setAlbum(data);
-            setAvgRating(data.avgPuntuacion ?? 0);
-            setCountRating(data.countPuntuacion ?? 0);
-            setUserRating(data.userRating ?? null);
-            setCanciones(data.canciones ?? []);
-            setError(null);
-        } catch (err) {
-            console.error(err);
-            setError(err.message);
-            setAlbum(null);
-        }
-    }, [albumId]);
+  // --- Fetch del álbum ---
+  const fetchAlbum = useCallback(async () => {
+    console.log("spotify_id recibido:", spotify_id); // 👈 AÑADE ESTO
+    console.log("tipo:", typeof spotify_id); // 👈 Y ESTO
 
-    // --- Actualizar solo las medias ---
+    if (!spotify_id) return;
+
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/musica/api/album/${spotify_id}/`);
+
+      if (!response.ok) throw new Error("Error cargando álbum");
+
+      const data = await response.json();
+      setAlbum(data);
+      setAvgRating(data.avgPuntuacion ?? 0);
+      setCountRating(data.countPuntuacion ?? 0);
+      setUserRating(data.userRating ?? null);
+      setCanciones(data.canciones ?? []);
+      setError(null);
+
+      
+    } catch (err) {
+      console.error(err);
+      setError(err.message);
+      setAlbum(null);
+    }
+  }, [spotify_id]);
+
+    // --- Actualizar solo medias ---
     const fetchRating = useCallback(async () => {
-        if (!album?.id) return;
+        if (!spotify_id) return;
+
         try {
-            const response = await fetch(`http://127.0.0.1:8000/musica/api/album/${albumId}/`);
+            const response = await fetch(`http://127.0.0.1:8000/musica/api/album/${spotify_id}/`);
             if (!response.ok) return;
             const data = await response.json();
             setAvgRating(data.avgPuntuacion ?? 0);
@@ -45,27 +56,18 @@ function DetalleAlbum() {
         } catch (err) {
             console.error("Error actualizando rating:", err);
         }
-    }, [album?.id, albumId]);
+    }, [spotify_id]);
 
     // --- Handler de rating ---
     const handleRating = async (puntuacion) => {
         let accessToken = localStorage.getItem("access");
-        if (!accessToken) {
-            alert("Debes iniciar sesión para valorar.");
-            return;
-        }
+        if (!accessToken) return alert("Debes iniciar sesión para valorar.");
 
-        // Revisar si el token ha expirado
         try {
             const payload = JSON.parse(atob(accessToken.split(".")[1]));
-            const ahora = Date.now() / 1000;
-            if (ahora > payload.exp) {
-                console.log("Token expirado, refrescando...");
-                accessToken = await refreshAccessToken(); // obtiene y guarda el token nuevo
-                if (!accessToken) {
-                    alert("No se pudo refrescar el token. Inicia sesión de nuevo.");
-                    return;
-                }
+            if (Date.now() / 1000 > payload.exp) {
+                accessToken = await refreshAccessToken();
+                if (!accessToken) return alert("No se pudo refrescar token, inicia sesión de nuevo.");
             }
         } catch (err) {
             console.error("Error decodificando token:", err);
@@ -73,7 +75,7 @@ function DetalleAlbum() {
 
         try {
             const response = await fetch(
-                `http://127.0.0.1:8000/musica/album/${album?.id}/valorar/`,
+                `http://127.0.0.1:8000/musica/album/${spotify_id}/valorar/`, 
                 {
                     method: "POST",
                     headers: {
@@ -84,19 +86,9 @@ function DetalleAlbum() {
                 }
             );
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error("Error valorando álbum:", errorText);
-                throw new Error("Error valorando álbum");
-            }
+            if (!response.ok) throw new Error("Error valorando álbum");
 
-            const data = await response.json();
-            console.log("Álbum valorado:", data);
-
-            // Actualizamos solo el rating del usuario localmente
             setUserRating(puntuacion);
-
-            // Refrescamos avg y count desde la API
             fetchRating();
         } catch (err) {
             console.error(err);
@@ -183,15 +175,15 @@ return (
 
                         <div className="info-cancion">
                             <p>
-                                <strong>Número de canciones:</strong> {album.numCanciones ?? "—"}
+                                <strong>Número de canciones:</strong> {Array.isArray(canciones) ? canciones.length : "—"}
                             </p>
                             <p>
                                 <strong>Duración total:</strong>{" "}
-                                {album.duracionFormateada ?? "—"}
+                                {album.duracion_formateada ?? "—"}
                             </p>
                             <p>
                                 <strong>Fecha de lanzamiento:</strong>{" "}
-                                {album.fechaFormateada ?? "—"}
+                                {album.fecha_lanzamiento ?? "—"}
                             </p>
                         </div>
                     </div>
@@ -205,9 +197,9 @@ return (
                                     <li key={c.spotify_id}>
                                         <Link to={`/cancion/${c.spotify_id}`}>{c.titulo}</Link>
                                         <span className="nota-media">
-                                            {c.avg_puntuacion ? (
+                                            {c.valoracion_media ? (
                                                 <>
-                                                    {c.avg_puntuacion.toFixed(1)} ({c.count_puntuacion} votos)
+                                                    {c.valoracion_media.toFixed(1)}
                                                 </>
                                             ) : (
                                                 "Sin valoraciones"
