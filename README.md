@@ -85,7 +85,7 @@ cd ListenList
 ```
 ---
 
-###Set up the backend (Django)
+### Set up the backend (Django)
 ```bash
 python -m venv venv        # Create virtual environment (optional but recommended)
 source venv/bin/activate   # Linux/Mac
@@ -96,7 +96,7 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-###Set up the frontend (React)
+### Set up the frontend (React)
 In another terminal, inside the frontend folder:
 ```bash
 cd frontend
