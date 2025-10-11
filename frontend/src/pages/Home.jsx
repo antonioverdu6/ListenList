@@ -3,10 +3,13 @@ import "../styles/styles.css";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import FondoBurbujas from "../components/FondoBurbujas";
+
 
 function Home() {
   const [query, setQuery] = useState("");
   const navigate = useNavigate(); 
+  const username = localStorage.getItem("username");
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -17,6 +20,7 @@ function Home() {
 
   return (
     <>
+      <FondoBurbujas />
       <header>
         <div className="logo">
           ListenList <span>beta</span>

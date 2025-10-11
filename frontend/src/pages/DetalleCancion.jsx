@@ -281,6 +281,7 @@ function DetalleCancion() {
 
   return (
     <>
+      
       <header className="header-bar">
         <div className="logo">
           ListenList <span>beta</span>

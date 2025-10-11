@@ -32,6 +32,7 @@ function Login() {
         // Guardar tokens en localStorage
         localStorage.setItem("access", data.access);
         localStorage.setItem("refresh", data.refresh);
+        localStorage.setItem("username", username);
 
         // Redirigir a la página principal
         navigate("/inicio");

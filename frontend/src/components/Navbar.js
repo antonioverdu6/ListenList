@@ -4,19 +4,22 @@ import { Link, useNavigate } from "react-router-dom";
 function Navbar() {
   const navigate = useNavigate();
   const token = localStorage.getItem("access");
+  const username = localStorage.getItem("username");
 
   const handleLogout = (e) => {
-    e.preventDefault(); // evita que el link haga reload
+    e.preventDefault();
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");
-    navigate("/"); // volvemos a home después de cerrar sesión
+    localStorage.removeItem("username");
+    navigate("/");
   };
 
   return (
     <nav>
       <Link to="/">Inicio</Link>
       <Link to="/explorar">Explorar</Link>
-      {token && <Link to="/perfil">Mi perfil</Link>}
+
+      {token && username && <Link to={`/perfil/${username}`}>Mi perfil</Link>}
 
       {token ? (
         <a href="#" onClick={handleLogout} style={{ marginLeft: "2rem" }}>

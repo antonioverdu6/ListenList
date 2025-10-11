@@ -356,3 +356,84 @@ a.search-button:focus {
     /* puedes ajustar 'right' o 'left' si quieres */
 }
 
+
+/* --- Botones de categoría: versión limpia, fluida y moderna --- */
+.category-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  max-width: 1200px;
+  margin: -0.4rem auto 1.6rem;
+  padding: 0 1rem;
+}
+
+.category-buttons button {
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  padding: 0.65rem 1.1rem;
+  border-radius: 999px;
+  border: 1.5px solid rgba(29, 185, 84, 0.18);
+  background: linear-gradient(180deg, #2a2d2f 0%, #212425 100%);
+  color: #f3f4f5;
+  font-size: 0.96rem;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  transition: 
+    background 0.35s ease,
+    border-color 0.35s ease,
+    box-shadow 0.35s ease,
+    transform 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  outline: none;
+}
+
+/* Hover suave: el fondo se aclara ligeramente y se eleva un poco */
+.category-buttons button:hover {
+  background: linear-gradient(180deg, #323638 0%, #272a2c 100%);
+  border-color: rgba(29, 185, 84, 0.35);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(29, 185, 84, 0.15);
+}
+
+/* Efecto clic más natural */
+.category-buttons button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(29, 185, 84, 0.1);
+}
+
+/* Botón activo: destaca con un verde elegante, no chillón */
+.category-buttons button.active {
+  background: linear-gradient(90deg, #1db954 0%, #17a74a 100%);
+  border-color: transparent;
+  color: #0b0b0b;
+  box-shadow: 0 4px 14px rgba(29, 185, 84, 0.25);
+  transform: translateY(-1px);
+}
+
+/* Hover sobre otros mientras hay uno activo */
+.category-buttons button:not(.active):hover {
+  background: linear-gradient(180deg, #303436 0%, #26292a 100%);
+  box-shadow: 0 3px 8px rgba(29, 185, 84, 0.1);
+}
+
+
+@media (max-width: 700px) {
+    .category-buttons {
+        gap: 0.5rem;
+        margin: 0.2rem auto 1.2rem;
+        padding: 0 0.7rem;
+    }
+    .category-buttons button {
+        flex: 1 1 calc(50% - 0.5rem);
+        text-align: center;
+    }
+}
+
+@media (max-width: 420px) {
+    .category-buttons button {
+        flex: 1 1 100%;
+    }
+}

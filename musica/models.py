@@ -16,6 +16,8 @@ class Genero(models.Model):
 class Artista(models.Model):
     nombre = models.CharField(max_length=200)
     generos = models.ManyToManyField(Genero, blank=True, related_name='artistas')
+    imagen_url = models.URLField(blank=True, null=True)
+
 
     def __str__(self):
         return self.nombre
@@ -127,3 +129,35 @@ class ValoracionArtista(Valoracion):
 
     class Meta:
         unique_together = ('autor', 'artista')
+
+class Perfil(models.Model):
+    usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil')
+    fotoPerfil = models.CharField(max_length=500, blank=True, null=True)
+    banner = models.URLField(blank=True, null=True)
+    biografia = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.usuario.username
+
+    # === NUEVO ===
+    def comentarios_usuario(self):
+        from .models import ComentarioCancion, ComentarioAlbum
+        return list(ComentarioCancion.objects.filter(autor=self.usuario)) + \
+               list(ComentarioAlbum.objects.filter(autor=self.usuario))
+
+    def valoraciones_usuario(self):
+        from .models import ValoracionCancion, ValoracionAlbum, ValoracionArtista
+        return list(ValoracionCancion.objects.filter(autor=self.usuario)) + \
+               list(ValoracionAlbum.objects.filter(autor=self.usuario)) + \
+               list(ValoracionArtista.objects.filter(autor=self.usuario))
+
+class Seguimiento(models.Model):
+    seguidor = models.ForeignKey(User, on_delete=models.CASCADE, related_name="seguidos")
+    seguido = models.ForeignKey(User, on_delete=models.CASCADE, related_name="seguidores")
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("seguidor", "seguido")
+
+    def __str__(self):
+        return f"{self.seguidor.username} → {self.seguido.username}"

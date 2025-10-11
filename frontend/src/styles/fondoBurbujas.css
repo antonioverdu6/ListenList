@@ -1,0 +1,41 @@
+.fondo-burbujas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: -1;
+  background: linear-gradient(180deg, #232526 0%, #414345 100%);
+}
+
+/* Cada burbuja */
+.burbuja {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.65;
+  filter: drop-shadow(0 0 8px rgba(40, 246, 112, 0.4)) blur(0.1px);
+  animation: flotar 22s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+
+
+
+/* Animación tipo “hojas flotando en agua” */
+@keyframes flotar {
+  0% {
+    transform: translateY(100vh) translateX(0) scale(0.8) rotate(0deg);
+  }
+  25% {
+    transform: translateY(70vh) translateX(30px) scale(1) rotate(5deg);
+  }
+  50% {
+    transform: translateY(40vh) translateX(-20px) scale(1.1) rotate(-8deg);
+  }
+  75% {
+    transform: translateY(10vh) translateX(15px) scale(0.9) rotate(4deg);
+  }
+  100% {
+    transform: translateY(-20vh) translateX(0) scale(0.8) rotate(0deg);
+  }
+}

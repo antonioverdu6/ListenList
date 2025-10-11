@@ -4,14 +4,14 @@ from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.db.models import Sum
 from django.db.models import Avg, Count
-from .models import Artista, Cancion, Album, ComentarioCancion, ValoracionCancion, ValoracionAlbum, ValoracionArtista, ListaMusical
+from .models import Artista, Cancion, Album, ComentarioCancion, ValoracionCancion, ValoracionAlbum, ValoracionArtista, ListaMusical, ComentarioAlbum, Perfil, Seguimiento
 from .forms import RegistroForm, ValoracionCancionForm, ValoracionAlbumForm, ValoracionArtistaForm
 from .spotify_client import buscar_canciones, get_or_create_cancion, get_or_create_album
 from django.utils import timezone
 from .audd_api import obtener_letra
 from datetime import date, timedelta
 from .utils import formatear_fecha, normalizar_fecha, formatear_duracion
-from .serializers import ArtistaSerializer, AlbumSerializer, CancionSerializer, ListaMusicalSerializer, AlbumDetailSerializer
+from .serializers import ArtistaSerializer, AlbumSerializer, CancionSerializer, ListaMusicalSerializer, AlbumDetailSerializer, ComentarioAlbumSerializer, UsuarioSerializer, PerfilSerializer
 from rest_framework import generics
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.contrib.auth.models import User
@@ -19,6 +19,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status
+from rest_framework import generics, permissions
+from rest_framework.response import Response
+
 
 
 # Create your views here.
@@ -334,6 +337,46 @@ def agregar_comentario_cancion(request, cancion_id):
         return JsonResponse({"comentarios": comentarios})
     return JsonResponse({"error": "Método no permitido"}, status=405)
 
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def agregar_comentario_album(request, album_id):
+    album = get_object_or_404(Album, id=album_id)
+    texto = request.POST.get("texto", "").strip()
+    parent_id = request.POST.get("parent_id")
+
+    if not texto:
+        return JsonResponse({"error": "El texto del comentario es obligatorio."}, status=400)
+
+    comentario = ComentarioAlbum(
+        album=album,
+        autor=request.user,
+        texto=texto
+    )
+
+    if parent_id:
+        try:
+            parent = ComentarioAlbum.objects.get(id=parent_id)
+            comentario.parent = parent
+        except ComentarioAlbum.DoesNotExist:
+            return JsonResponse({"error": "Comentario padre no encontrado."}, status=400)
+
+    comentario.save()
+
+    comentarios = [
+        {
+            "id": c.id,
+            "autor": c.autor.username,
+            "texto": c.texto,
+            "respuestas": [
+                {"id": r.id, "autor": r.autor.username, "texto": r.texto}
+                for r in c.respuestas.all()
+            ],
+        }
+        for c in album.comentarios.filter(parent__isnull=True).order_by("-fecha")
+    ]
+
+    return JsonResponse({"comentarios": comentarios})
+
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
@@ -549,3 +592,207 @@ def borrar_comentario_cancion(request, comentario_id):
     return JsonResponse({"success": "Comentario borrado"})
 
 
+class EditarComentarioAlbumAPIView(generics.UpdateAPIView):
+    queryset = ComentarioAlbum.objects.all()
+    serializer_class = ComentarioAlbumSerializer
+    permission_classes = [IsAuthenticated]
+
+class BorrarComentarioAlbumAPIView(generics.DestroyAPIView):
+    queryset = ComentarioAlbum.objects.all()
+    serializer_class = ComentarioAlbumSerializer
+    permission_classes = [IsAuthenticated]
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def editar_comentario_album(request, comentario_id):
+    comentario = get_object_or_404(ComentarioAlbum, id=comentario_id)
+    if comentario.autor != request.user:
+        return JsonResponse({"error": "No tienes permiso para editar este comentario"}, status=403)
+    texto = request.data.get("texto", "").strip()
+    if not texto:
+        return JsonResponse({"error": "Texto vacío"}, status=400)
+    comentario.texto = texto
+    comentario.save()
+    return JsonResponse({"id": comentario.id, "texto": comentario.texto})
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def borrar_comentario_album(request, comentario_id):
+    comentario = get_object_or_404(ComentarioAlbum, id=comentario_id)
+    if comentario.autor != request.user:
+        return JsonResponse({"error": "No tienes permiso para borrar este comentario"}, status=403)
+    comentario.delete()
+    return JsonResponse({"success": "Comentario borrado"})
+
+class UsuarioDetailAPI(generics.RetrieveAPIView):
+    queryset = User.objects.all()
+    serializer_class = UsuarioSerializer
+    lookup_field = 'username'
+    permission_classes = [AllowAny]
+
+
+class PerfilDetailAPI(generics.RetrieveUpdateAPIView):
+    serializer_class = PerfilSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_object(self):
+        username = self.kwargs["username"]
+        user = get_object_or_404(User, username=username)
+        perfil, created = Perfil.objects.get_or_create(usuario=user)
+        return perfil
+
+    def get(self, request, *args, **kwargs):
+        perfil = self.get_object()
+        serializer = self.get_serializer(perfil)
+        return Response(serializer.data)
+
+    def put(self, request, *args, **kwargs):
+        perfil = self.get_object()
+
+        # Solo el dueño puede editar su perfil
+        if request.user != perfil.usuario:
+            return Response({"detail": "No tienes permiso para editar este perfil."},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        serializer = self.get_serializer(perfil, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["request"] = self.request
+        return context
+
+    
+
+
+class ArtistaDetailAPI(generics.RetrieveAPIView):
+    queryset = Artista.objects.all()
+    serializer_class = ArtistaSerializer
+    lookup_field = 'id'
+
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def perfil_usuario(request, username):
+    user = get_object_or_404(User, username=username)
+    perfil, _ = Perfil.objects.get_or_create(usuario=user)
+    serializer = PerfilSerializer(perfil)
+    return Response(serializer.data)
+
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated])
+def editar_perfil(request):
+    user = request.user
+    perfil, _ = Perfil.objects.get_or_create(usuario=user)
+
+    data = request.data
+    perfil.fotoPerfil = data.get("fotoPerfil", perfil.fotoPerfil)
+    perfil.banner = data.get("banner", perfil.banner)
+    perfil.biografia = data.get("biografia", perfil.biografia)
+    perfil.save()
+
+    serializer = PerfilSerializer(perfil)
+    return Response(serializer.data)
+
+########################################################### SEGUIDORES ###########################################################
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def seguidores_y_siguiendo(request, username):
+    user = get_object_or_404(User, username=username)
+    seguidores_count = Seguimiento.objects.filter(seguido=user).count()
+    siguiendo_count = Seguimiento.objects.filter(seguidor=user).count()
+    return Response({
+        "seguidores": seguidores_count,
+        "siguiendo": siguiendo_count
+    })
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def comprobar_seguimiento(request, username):
+    seguido = get_object_or_404(User, username=username)
+    sigue = Seguimiento.objects.filter(seguidor=request.user, seguido=seguido).exists()
+    return Response({"siguiendo": sigue})
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def toggle_seguir_usuario(request, username):
+    seguido = get_object_or_404(User, username=username)
+    if seguido == request.user:
+        return Response({"error": "No puedes seguirte a ti mismo"}, status=400)
+
+    seguimiento = Seguimiento.objects.filter(seguidor=request.user, seguido=seguido)
+    if seguimiento.exists():
+        seguimiento.delete()
+        return Response({"message": f"Has dejado de seguir a {seguido.username}", "siguiendo": False})
+    else:
+        Seguimiento.objects.create(seguidor=request.user, seguido=seguido)
+        return Response({"message": f"Ahora sigues a {seguido.username}", "siguiendo": True})
+    
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def buscar_usuarios(request):
+    q = request.GET.get("q", "").strip().lower()
+    from django.contrib.auth.models import User
+    if not q:
+        return Response([])
+    usuarios = User.objects.filter(username__icontains=q)
+    data = [
+        {
+            "username": u.username,
+            "email": u.email,
+            "fotoPerfil": getattr(u.perfil, "fotoPerfil", None)
+        }
+        for u in usuarios
+    ]
+    return Response(data)
+
+
+# === BUSCAR ARTISTAS ===
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def buscar_artistas(request):
+    q = request.GET.get("q", "").strip().lower()
+    if not q:
+        return Response([])
+
+    artistas = Artista.objects.filter(nombre__icontains=q)
+    data = [
+        {
+            "id": a.id,
+            "nombre": a.nombre,
+            "imagen_url": a.imagen_url,
+        }
+        for a in artistas
+    ]
+    return Response(data)
+
+
+# === BUSCAR ÁLBUMES ===
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def buscar_albums(request):
+    q = request.GET.get("q", "").strip().lower()
+    if not q:
+        return Response([])
+
+    albums = Album.objects.filter(titulo__icontains=q).select_related("artista")
+    data = [
+        {
+            "id": a.id,
+            "titulo": a.titulo,
+            "spotify_id": a.spotify_id,
+            "imagen_url": a.imagen_url,
+            "artista": {
+                "nombre": a.artista.nombre if a.artista else None,
+                "id": a.artista.id if a.artista else None,
+            },
+        }
+        for a in albums
+    ]
+    return Response(data)

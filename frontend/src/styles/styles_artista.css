@@ -1,0 +1,52 @@
+.detalle-artista {
+  background: linear-gradient(180deg, #232526 0%, #000 100%);
+  color: #f5f6fa;
+  min-height: 100vh;
+  text-align: center;
+  padding-top: 4rem;
+  font-family: "Inter", sans-serif;
+}
+
+.artista-info {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.artista-imagen {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 30px rgba(29, 185, 84, 0.4);
+  margin-bottom: 1.5rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.artista-imagen:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 45px rgba(23, 167, 74, 0.55);
+}
+
+.artista-generos {
+  color: #b2bec3;
+  margin-bottom: 1rem;
+}
+
+.artista-valoracion {
+  color: #1db954;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.volver-link {
+  display: inline-block;
+  margin-top: 2rem;
+  color: #1db954;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.volver-link:hover {
+  color: #17a74a;
+}

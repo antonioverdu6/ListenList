@@ -22,6 +22,27 @@ def buscar_canciones(query, limit=17):
         })
     return canciones
 
+
+def get_or_create_artista(spotify_id):
+    from .models import Artista
+
+    artista = Artista.objects.filter(id=spotify_id).first()
+    if artista and artista.imagen_url:
+        return artista
+
+    # Obtener datos del artista desde Spotify
+    data = sp.artist(spotify_id)
+
+    artista, _ = Artista.objects.get_or_create(
+        nombre=data["name"]
+    )
+
+    if data.get("images"):
+        artista.imagen_url = data["images"][0]["url"]
+        artista.save(update_fields=["imagen_url"])
+
+    return artista
+
 from datetime import timedelta, datetime
 
 def get_or_create_cancion(spotify_id):
