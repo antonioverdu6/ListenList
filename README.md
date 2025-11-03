@@ -5,6 +5,11 @@ Its goal is to let users **search music, rate and review** songs or albums using
 
 ---
 
+### 🎥 Demo del proyecto
+[![Ver demo](https://img.youtube.com/vi/zpEnUtNpljM/0.jpg)](https://www.youtube.com/watch?v=zpEnUtNpljM)
+
+---
+
 ## 🎧 How the app works
 
 Instead of storing all artists, songs, and albums locally, the app uses the **Spotify Web API** to fetch the catalog in real time.  
