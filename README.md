@@ -5,8 +5,9 @@ Its goal is to let users **search music, rate and review** songs or albums using
 
 ---
 
-### 🎥 Demo del proyecto
-[![Ver demo](https://img.youtube.com/vi/zpEnUtNpljM/0.jpg)](https://www.youtube.com/watch?v=zpEnUtNpljM)
+### 🎥 Vídeo del proyecto
+
+[![Demo ListenList Beta](https://i.ytimg.com/vi/zpEnUtNpljM/hqdefault.jpg)](https://www.youtube.com/watch?v=zpEnUtNpljM)
 
 ---
 
