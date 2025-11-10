@@ -441,3 +441,17 @@ body {
 .detalle-album-page {
     padding: 2rem;
 }
+
+.artista {
+    text-decoration: none;  /* quita el subrayado */
+    color: inherit;         /* mantiene el color del texto */
+    transition: color 0.3s ease; /* para efecto suave al hover */
+}
+
+.artista:hover {
+    color: #1db954; /* verde vibrante */
+    font-size: 2.4rem;
+    text-shadow: 0 0 18px #1db95488, 0 2px 12px #fff8;
+    transform: scale(1.18) rotate(-3deg);
+    transition: color 0.25s, font-size 0.25s, text-shadow 0.25s, transform 0.25s;
+}

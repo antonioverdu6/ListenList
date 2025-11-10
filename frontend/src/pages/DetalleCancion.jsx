@@ -120,6 +120,17 @@ function DetalleCancion() {
     return () => clearInterval(interval);
   }, [fetchCancion, fetchRating]);
 
+  // Asegurarnos de que al entrar en la página la vista esté en la parte superior.
+  // Esto evita que, al navegar desde un álbum u otra página, el scroll se mantenga a mitad.
+  useEffect(() => {
+    try {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    } catch (err) {
+      // En entornos donde window no exista, evitamos lanzar errores.
+      console.debug("scrollTo no disponible:", err);
+    }
+  }, [spotifyId]);
+
 
   const getArtistName = (item) => {
     const album = item?.album;
@@ -131,6 +142,13 @@ function DetalleCancion() {
     if (artista?.name) return artista.name;
     return "Desconocido";
   };
+
+  const artistId = (() => {
+    const a = cancion?.album?.artista;
+    if (!a) return null;
+    if (typeof a === "string") return null;
+    return a.id ?? a.pk ?? a.spotify_id ?? null;
+  })();
 
 
   const toggleRespuestaForm = (id) => {
@@ -312,7 +330,15 @@ function DetalleCancion() {
 
       <div className="detalle-cancion-page">
         <h1>{cancion.titulo ?? "Sin título"}</h1>
-        <h2>Artista: {getArtistName(cancion)}</h2>
+        <h2>
+          Artista: {
+            artistId ? (
+                <Link to={`/artista/${artistId}`} className="artista">{getArtistName(cancion)}</Link>
+            ) : (
+              getArtistName(cancion)
+            )
+          }
+        </h2>
 
         <div className="detalle-cancion">
           <div className="imagen-cancion">

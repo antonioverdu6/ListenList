@@ -1,6 +1,7 @@
 from datetime import timedelta
 from rest_framework import serializers
 from .models import Genero, Artista, Album, Cancion, ListaMusical, ComentarioCancion, Valoracion, ComentarioAlbum, Perfil
+from .models import ComentarioArtista
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -12,12 +13,102 @@ class GeneroSerializer(serializers.ModelSerializer):
         fields = ['id', 'nombre']
 
 class ArtistaSerializer(serializers.ModelSerializer):
-    generos = GeneroSerializer(many=True, read_only=True)
-    valoracion_media = serializers.FloatField(read_only=True)
+    generos = serializers.SerializerMethodField()
+    valoracion_media = serializers.SerializerMethodField()
+    albums = serializers.SerializerMethodField()
+    top_tracks = serializers.SerializerMethodField()
+    seguidores_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Artista
-        fields = ['id', 'nombre', 'generos', 'valoracion_media', 'imagen_url']
+        fields = ['id', 'nombre', 'spotify_id', 'generos', 'valoracion_media', 'imagen_url', 'albums', 'top_tracks', 'seguidores_count']
+
+    def get_albums(self, obj):
+        try:
+            from .models import Album
+            from django.db.models import Avg
+            qs = Album.objects.filter(artista=obj).annotate(avg_rating=Avg('valoraciones__puntuacion'))
+            qs = qs.order_by('-avg_rating')[:5]
+            data = []
+            for a in qs:
+                data.append({
+                    'id': a.id,
+                    'titulo': a.titulo,
+                    'imagen_url': a.imagen_url,
+                    'spotify_id': a.spotify_id,
+                    'fecha_lanzamiento': getattr(a, 'fecha_lanzamiento', None),
+                    'valoracion_media': float(getattr(a, 'avg_rating', 0) or 0),
+                })
+            return data
+        except Exception:
+            return []
+
+    def get_top_tracks(self, obj):
+        try:
+            from .models import Cancion
+            from django.db.models import Avg
+            qs = Cancion.objects.filter(album__artista=obj).annotate(avg_rating=Avg('valoraciones__puntuacion'))
+            qs = qs.order_by('-avg_rating')[:5]
+            data = []
+            for c in qs:
+                data.append({
+                    'id': c.id,
+                    'spotify_id': c.spotify_id,
+                    'titulo': c.titulo,
+                    'valoracion_media': c.valoracion_media() or 0,
+                    'album': c.album.id if c.album else None,
+                    'album_titulo': c.album.titulo if c.album else None,
+                })
+            return data
+        except Exception:
+            return []
+
+    def get_generos(self, obj):
+        try:
+            # Si el artista ya tiene géneros asociados en la DB, devolverlos
+            if obj.generos.exists():
+                return GeneroSerializer(obj.generos.all(), many=True).data
+
+            # Fallback: intentar obtener géneros desde Spotify preferentemente por spotify_id
+            from .spotify_client import obtener_generos_por_id, obtener_generos_y_id_por_nombre
+            if getattr(obj, 'spotify_id', None):
+                generos = obtener_generos_por_id(obj.spotify_id)
+                artist_id_used = obj.spotify_id
+            else:
+                generos, artist_id_used = obtener_generos_y_id_por_nombre(obj.nombre)
+            # Persistir géneros en DB y relacionarlos al artista
+            created_objs = []
+            from .models import Genero
+            for g in generos:
+                if not g:
+                    continue
+                gen_obj, _ = Genero.objects.get_or_create(nombre=g)
+                obj.generos.add(gen_obj)
+                created_objs.append(gen_obj)
+
+            # If we discovered the spotify artist id from the search, persist it on the model
+            if artist_id_used and not getattr(obj, 'spotify_id', None):
+                obj.spotify_id = artist_id_used
+                obj.save(update_fields=['spotify_id'])
+
+            return GeneroSerializer(created_objs, many=True).data if created_objs else []
+        except Exception:
+            return []
+
+    def get_valoracion_media(self, obj):
+        try:
+            v = obj.valoracion_media()
+            return float(v) if v is not None else 0.0
+        except Exception:
+            return 0.0
+
+    def get_seguidores_count(self, obj):
+        try:
+            from .models import SeguimientoArtista
+            return SeguimientoArtista.objects.filter(artista=obj).count()
+        except Exception:
+            # If the model is not present or any error, gracefully return 0
+            return 0
 
 
 class AlbumSerializer(serializers.ModelSerializer):
@@ -180,6 +271,19 @@ class ComentarioAlbumSerializer(serializers.ModelSerializer):
     def get_respuestas(self, obj):
         respuestas = obj.respuestas.all()
         return ComentarioAlbumSerializer(respuestas, many=True).data
+
+
+class ComentarioArtistaSerializer(serializers.ModelSerializer):
+    autor = serializers.StringRelatedField(read_only=True)
+    respuestas = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ComentarioArtista
+        fields = ["id", "autor", "texto", "fecha", "parent", "respuestas"]
+
+    def get_respuestas(self, obj):
+        respuestas = obj.respuestas.all()
+        return ComentarioArtistaSerializer(respuestas, many=True).data
     
 class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:

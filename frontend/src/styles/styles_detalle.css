@@ -656,6 +656,13 @@ input[type="hidden"] {
     height: 4rem;
 }
 
+/* Remove bottom padding on header-bar to avoid visible hairline under the header */
+.header-bar {
+    /* slightly taller header but reduced per request: vertical padding = 0.75rem */
+    padding: 0.75rem 1.2rem !important;
+    margin-bottom: 0 !important; /* keep no bottom margin to avoid hairline */
+}
+
 
 
 /* LOGO */

@@ -298,7 +298,19 @@ function DetalleAlbum() {
             <div className="detalle-album-page">
                 <main className="album-detalle">
                     <h1 className="album-title">{album.titulo}</h1>
-                    <h2>Artista: {album.artista?.nombre ?? "Desconocido"}</h2>
+                    {(() => {
+                        const a = album?.artista;
+                        const artistId = a ? (a.id ?? a.pk ?? a.spotify_id ?? null) : null;
+                        return (
+                            <h2>
+                                Artista: {artistId ? (
+                                        <Link to={`/artista/${artistId}`} className="artista">{album.artista?.nombre ?? "Desconocido"}</Link>
+                                ) : (
+                                    album.artista?.nombre ?? "Desconocido"
+                                )}
+                            </h2>
+                        );
+                    })()}
 
                     <div className="album-columns">
                         {/* INFO ÁLBUM */}

@@ -37,7 +37,7 @@ def obtener_letra(cancion_nombre, artista_nombre=None):
     }
 
     try:
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=8)
         data = response.json()
 
         if DEBUG_AUDD:
@@ -63,6 +63,16 @@ def obtener_letra(cancion_nombre, artista_nombre=None):
             # Solo aceptar si la similitud es suficiente (ej: > 0.75)
             if mejor_match and mejor_score >= 0.75:
                 return mejor_match.get("lyrics")
+
+            # Fallback razonable: si no hay un match suficientemente alto, devolver la letra
+            # del primer resultado que contenga 'lyrics' (esto puede tener falsos positivos,
+            # pero suele ser mejor que no devolver nada).
+            for r in data.get("result", []):
+                lyrics = r.get("lyrics")
+                if lyrics:
+                    if DEBUG_AUDD:
+                        print("AUDD FALLBACK: devolviendo primera letra disponible con score", mejor_score)
+                    return lyrics
 
         # Segundo intento: solo con el título
         if clean_artist:

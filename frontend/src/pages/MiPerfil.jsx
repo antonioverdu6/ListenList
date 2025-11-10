@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 import "../styles/miperfil.css";
 import Footer from "../components/Footer";
@@ -17,6 +17,7 @@ function MiPerfil() {
     biografia: "",
   });
   const [comentarios, setComentarios] = useState([]);
+  const [artistasSeguidos, setArtistasSeguidos] = useState([]);
   const [valoraciones, setValoraciones] = useState([]);
   const [siguiendo, setSiguiendo] = useState(false);
   const [contador, setContador] = useState({ seguidores: 0, siguiendo: 0 });
@@ -74,6 +75,47 @@ function MiPerfil() {
     };
     fetchSeguimiento();
   }, [username]);
+
+  // Cargar artistas seguidos (carrusel)
+  useEffect(() => {
+    let mounted = true;
+    const fetchSeguidos = async () => {
+      try {
+        const res = await fetch(`http://127.0.0.1:8000/musica/api/artistas_seguidos/${username}/`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (mounted) setArtistasSeguidos(data || []);
+      } catch (err) {
+        console.error('Error cargando artistas seguidos:', err);
+      }
+    };
+
+    fetchSeguidos();
+
+    // Listen for changes triggered elsewhere (DetalleArtista)
+    const handler = () => fetchSeguidos();
+    window.addEventListener('artistaSeguido', handler);
+    const storageHandler = (e) => {
+      if (e.key === 'artista_seguimiento_changed') fetchSeguidos();
+    };
+    window.addEventListener('storage', storageHandler);
+
+    return () => {
+      mounted = false;
+      window.removeEventListener('artistaSeguido', handler);
+      window.removeEventListener('storage', storageHandler);
+    };
+  }, [username]);
+
+  const carruselRef = useRef(null);
+  const scrollIzquierda = () => {
+    if (!carruselRef.current) return;
+    carruselRef.current.scrollBy({ left: -300, behavior: 'smooth' });
+  };
+  const scrollDerecha = () => {
+    if (!carruselRef.current) return;
+    carruselRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+  };
 
   // Función para seguir/dejar de seguir
   const handleToggleFollow = async () => {
@@ -272,6 +314,33 @@ function MiPerfil() {
             ))
           ) : (
             <p className="sin-datos">Aún no has comentado nada.</p>
+          )}
+        </section>
+
+        {/* Artistas seguidos (carrusel) */}
+        <section className="perfil-seccion">
+          <h2>Artistas seguidos</h2>
+          {artistasSeguidos && artistasSeguidos.length > 0 ? (
+            <div className="artistas-seguidos-wrapper">
+              <button className="carrusel-btn left" onClick={scrollIzquierda}>◀</button>
+              <div className="artistas-seguidos" ref={carruselRef}>
+                {artistasSeguidos.map((a) => (
+                  <div key={a.id} className="artista-card">
+                    <Link to={`/artista/${a.id}`}>
+                      {a.imagen_url ? (
+                        <img src={a.imagen_url} alt={a.nombre} />
+                      ) : (
+                        <div className="artista-placeholder-small">Sin imagen</div>
+                      )}
+                      <div className="artista-card-nombre">{a.nombre}</div>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+              <button className="carrusel-btn right" onClick={scrollDerecha}>▶</button>
+            </div>
+          ) : (
+            <p className="sin-datos">No sigues a ningún artista aún.</p>
           )}
         </section>
 

@@ -3,6 +3,11 @@
 import os
 import sys
 
+# --- Variables de entorno temporales para AudD (DESARROLLO LOCAL) ---
+# Reemplaza el valor por tu clave real y no lo subas al repositorio.
+os.environ.setdefault("AUDD_API_KEY", "739112cfc57a0387ba9f46574fcd6daa")
+# Activa debug para ver la respuesta cruda en la consola (true/false)
+os.environ.setdefault("DEBUG_AUDD", "true")
 
 def main():
     """Run administrative tasks."""

@@ -15,6 +15,7 @@ class Genero(models.Model):
 
 class Artista(models.Model):
     nombre = models.CharField(max_length=200)
+    spotify_id = models.CharField(max_length=100, unique=True, null=True, blank=True)
     generos = models.ManyToManyField(Genero, blank=True, related_name='artistas')
     imagen_url = models.URLField(blank=True, null=True)
 
@@ -23,10 +24,42 @@ class Artista(models.Model):
         return self.nombre
 
     def valoracion_media(self):
-        valoraciones = self.valoraciones.all()
-        if valoraciones.exists():
-            return valoraciones.aggregate(Avg('puntuacion'))['puntuacion__avg']
-        return None
+        """
+        Compute artist average rating as a weighted combination:
+        60% = average of album average ratings (only albums with ratings)
+        40% = average of song average ratings (only songs with ratings)
+
+        If only one of albums/songs has ratings, return that average.
+        If neither has ratings, return None.
+        """
+        from django.db.models import Avg
+        # avoid circular import by loading models via apps
+        from django.apps import apps
+        Album = apps.get_model('musica', 'Album')
+        Cancion = apps.get_model('musica', 'Cancion')
+
+        # album-level averages: list of avg ratings per album (exclude None)
+        album_avgs = list(Album.objects.filter(artista=self)
+                          .annotate(avg=Avg('valoraciones__puntuacion'))
+                          .values_list('avg', flat=True))
+        album_avgs = [a for a in album_avgs if a is not None]
+
+        # song-level averages: list of avg ratings per song (exclude None)
+        song_avgs = list(Cancion.objects.filter(album__artista=self)
+                         .annotate(avg=Avg('valoraciones__puntuacion'))
+                         .values_list('avg', flat=True))
+        song_avgs = [s for s in song_avgs if s is not None]
+
+        if not album_avgs and not song_avgs:
+            return None
+
+        if album_avgs and song_avgs:
+            albums_mean = sum(album_avgs) / len(album_avgs)
+            songs_mean = sum(song_avgs) / len(song_avgs)
+            return 0.6 * albums_mean + 0.4 * songs_mean
+        if album_avgs:
+            return sum(album_avgs) / len(album_avgs)
+        return sum(song_avgs) / len(song_avgs)
 
 class Album(models.Model):
     titulo = models.CharField(max_length=200)
@@ -161,3 +194,16 @@ class Seguimiento(models.Model):
 
     def __str__(self):
         return f"{self.seguidor.username} → {self.seguido.username}"
+
+
+class SeguimientoArtista(models.Model):
+    seguidor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='artistas_seguidos')
+    artista = models.ForeignKey(Artista, on_delete=models.CASCADE, related_name='seguidores')
+    notificaciones = models.BooleanField(default=False)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('seguidor', 'artista')
+
+    def __str__(self):
+        return f"{self.seguidor.username} → {self.artista.nombre} (notif={self.notificaciones})"

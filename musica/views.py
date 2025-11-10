@@ -4,7 +4,7 @@ from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.db.models import Sum
 from django.db.models import Avg, Count
-from .models import Artista, Cancion, Album, ComentarioCancion, ValoracionCancion, ValoracionAlbum, ValoracionArtista, ListaMusical, ComentarioAlbum, Perfil, Seguimiento
+from .models import Artista, Cancion, Album, ComentarioCancion, ValoracionCancion, ValoracionAlbum, ValoracionArtista, ListaMusical, ComentarioAlbum, Perfil, Seguimiento, ComentarioArtista, SeguimientoArtista
 from .forms import RegistroForm, ValoracionCancionForm, ValoracionAlbumForm, ValoracionArtistaForm
 from .spotify_client import buscar_canciones, get_or_create_cancion, get_or_create_album
 from django.utils import timezone
@@ -378,6 +378,67 @@ def agregar_comentario_album(request, album_id):
     return JsonResponse({"comentarios": comentarios})
 
 
+@api_view(["GET", "POST"])
+@permission_classes([AllowAny])
+def agregar_comentario_artista(request, artista_id):
+    # Si GET -> devolver lista de comentarios
+    artista = get_object_or_404(Artista, id=artista_id)
+    if request.method == 'GET':
+        comentarios = [
+            {
+                "id": c.id,
+                "autor": c.autor.username,
+                "texto": c.texto,
+                "respuestas": [
+                    {"id": r.id, "autor": r.autor.username, "texto": r.texto}
+                    for r in c.respuestas.all()
+                ],
+            }
+            for c in artista.comentarios.filter(parent__isnull=True).order_by("-fecha")
+        ]
+        return JsonResponse({"comentarios": comentarios})
+
+    # POST -> crear comentario
+    if not request.user or not request.user.is_authenticated:
+        return JsonResponse({"error": "Autenticación requerida"}, status=401)
+
+    texto = request.POST.get("texto", "").strip()
+    parent_id = request.POST.get("parent_id")
+
+    if not texto:
+        return JsonResponse({"error": "El texto del comentario es obligatorio."}, status=400)
+
+    comentario = ComentarioArtista(
+        artista=artista,
+        autor=request.user,
+        texto=texto
+    )
+
+    if parent_id:
+        try:
+            parent = ComentarioArtista.objects.get(id=parent_id)
+            comentario.parent = parent
+        except ComentarioArtista.DoesNotExist:
+            return JsonResponse({"error": "Comentario padre no encontrado."}, status=400)
+
+    comentario.save()
+
+    comentarios = [
+        {
+            "id": c.id,
+            "autor": c.autor.username,
+            "texto": c.texto,
+            "respuestas": [
+                {"id": r.id, "autor": r.autor.username, "texto": r.texto}
+                for r in c.respuestas.all()
+            ],
+        }
+        for c in artista.comentarios.filter(parent__isnull=True).order_by("-fecha")
+    ]
+
+    return JsonResponse({"comentarios": comentarios})
+
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def valorar_cancion(request, cancion_id):
@@ -624,6 +685,30 @@ def borrar_comentario_album(request, comentario_id):
     comentario.delete()
     return JsonResponse({"success": "Comentario borrado"})
 
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def editar_comentario_artista(request, comentario_id):
+    comentario = get_object_or_404(ComentarioArtista, id=comentario_id)
+    if comentario.autor != request.user:
+        return JsonResponse({"error": "No tienes permiso para editar este comentario"}, status=403)
+    texto = request.data.get("texto", "").strip()
+    if not texto:
+        return JsonResponse({"error": "Texto vacío"}, status=400)
+    comentario.texto = texto
+    comentario.save()
+    return JsonResponse({"id": comentario.id, "texto": comentario.texto})
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def borrar_comentario_artista(request, comentario_id):
+    comentario = get_object_or_404(ComentarioArtista, id=comentario_id)
+    if comentario.autor != request.user:
+        return JsonResponse({"error": "No tienes permiso para borrar este comentario"}, status=403)
+    comentario.delete()
+    return JsonResponse({"success": "Comentario borrado"})
+
 class UsuarioDetailAPI(generics.RetrieveAPIView):
     queryset = User.objects.all()
     serializer_class = UsuarioSerializer
@@ -717,6 +802,50 @@ def comprobar_seguimiento(request, username):
     sigue = Seguimiento.objects.filter(seguidor=request.user, seguido=seguido).exists()
     return Response({"siguiendo": sigue})
 
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def comprobar_seguimiento_artista(request, artista_id):
+    """Devuelve si el usuario está siguiendo al artista (True/False) y si tiene notificaciones activas."""
+    artista = get_object_or_404(Artista, id=artista_id)
+    sigue = SeguimientoArtista.objects.filter(seguidor=request.user, artista=artista).exists()
+    notificaciones = False
+    if sigue:
+        obj = SeguimientoArtista.objects.filter(seguidor=request.user, artista=artista).first()
+        if obj:
+            notificaciones = bool(obj.notificaciones)
+    return Response({"siguiendo": sigue, "notificaciones": notificaciones})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def toggle_seguir_artista(request, artista_id):
+    """Crear o borrar un seguimiento a un artista. Devuelve {'siguiendo': bool} en la respuesta."""
+    artista = get_object_or_404(Artista, id=artista_id)
+    # Evitar seguir si se intenta con usuario anónimo manejado por decorator
+    seguimiento = SeguimientoArtista.objects.filter(seguidor=request.user, artista=artista)
+    if seguimiento.exists():
+        seguimiento.delete()
+        return Response({"message": f"Has dejado de seguir a {artista.nombre}", "siguiendo": False})
+    else:
+        SeguimientoArtista.objects.create(seguidor=request.user, artista=artista)
+        return Response({"message": f"Ahora sigues a {artista.nombre}", "siguiendo": True})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def toggle_notificacion_artista(request, artista_id):
+    """Alterna la preferencia de notificaciones para el usuario sobre el artista.
+    Si no existe un registro de seguimiento, lo crea con notificaciones=True.
+    Devuelve {'notificaciones': bool}.
+    """
+    artista = get_object_or_404(Artista, id=artista_id)
+    obj, created = SeguimientoArtista.objects.get_or_create(seguidor=request.user, artista=artista)
+    # Toggle the flag
+    obj.notificaciones = not obj.notificaciones
+    obj.save()
+    return Response({"notificaciones": obj.notificaciones})
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def toggle_seguir_usuario(request, username):
@@ -770,6 +899,26 @@ def buscar_artistas(request):
         }
         for a in artistas
     ]
+    return Response(data)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def artistas_seguidos(request, username):
+    """Devuelve la lista de artistas que sigue el usuario <username>.
+    Respuesta: [{id, nombre, imagen_url}, ...]
+    """
+    user = get_object_or_404(User, username=username)
+    from .models import SeguimientoArtista
+    qs = SeguimientoArtista.objects.filter(seguidor=user).select_related('artista')
+    data = []
+    for s in qs:
+        a = s.artista
+        data.append({
+            'id': a.id,
+            'nombre': a.nombre,
+            'imagen_url': a.imagen_url,
+        })
     return Response(data)
 
 
