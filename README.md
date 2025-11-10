@@ -5,6 +5,12 @@ Its goal is to let users **search music, rate and review** songs or albums using
 
 ---
 
+### 🎥 Vídeo del proyecto
+
+[![Demo ListenList Beta](https://i.ytimg.com/vi/zpEnUtNpljM/hqdefault.jpg)](https://www.youtube.com/watch?v=zpEnUtNpljM)
+
+---
+
 ## 🎧 How the app works
 
 Instead of storing all artists, songs, and albums locally, the app uses the **Spotify Web API** to fetch the catalog in real time.  
@@ -85,7 +91,7 @@ cd ListenList
 ```
 ---
 
-###Set up the backend (Django)
+### Set up the backend (Django)
 ```bash
 python -m venv venv        # Create virtual environment (optional but recommended)
 source venv/bin/activate   # Linux/Mac
@@ -96,7 +102,7 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-###Set up the frontend (React)
+### Set up the frontend (React)
 In another terminal, inside the frontend folder:
 ```bash
 cd frontend
