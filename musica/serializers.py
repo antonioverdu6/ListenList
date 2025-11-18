@@ -2,6 +2,7 @@ from datetime import timedelta
 from rest_framework import serializers
 from .models import Genero, Artista, Album, Cancion, ListaMusical, ComentarioCancion, Valoracion, ComentarioAlbum, Perfil
 from .models import ComentarioArtista
+from .models import Notificacion
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -352,3 +353,22 @@ class PerfilSerializer(serializers.ModelSerializer):
                 "nota": v.puntuacion,
             })
         return sorted(data, key=lambda x: x["nota"], reverse=True)
+
+
+class NotificacionSerializer(serializers.ModelSerializer):
+    origen_user = serializers.SerializerMethodField()
+    origen_artista = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Notificacion
+        fields = ['id', 'tipo', 'origen_user', 'origen_artista', 'contenido', 'enlace', 'leido', 'fecha_creacion']
+
+    def get_origen_user(self, obj):
+        if obj.origen_user:
+            return {'id': obj.origen_user.id, 'username': obj.origen_user.username}
+        return None
+
+    def get_origen_artista(self, obj):
+        if obj.origen_artista:
+            return {'id': obj.origen_artista.id, 'nombre': obj.origen_artista.nombre}
+        return None

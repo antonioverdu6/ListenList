@@ -1,8 +1,23 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import "../styles/miperfil.css";
 import Footer from "../components/Footer";
+import NotificationPanel from "../components/NotificationPanel";
 import { refreshAccessToken } from "../utils/auth";
+
+// Small reusable back+search component used in headers
+function BackAndSearch() {
+  const navigate = useNavigate();
+  const [searchQ, setSearchQ] = useState("");
+  return (
+    <>
+  <button className="back-btn" onClick={() => navigate(-1)} aria-label="Volver">Volver</button>
+      <form className="header-search" onSubmit={(e) => { e.preventDefault(); if (!searchQ.trim()) return; navigate(`/buscar?q=${encodeURIComponent(searchQ.trim())}`); }}>
+        <input className="header-search-input" type="text" placeholder="Buscar..." value={searchQ} onChange={(e) => setSearchQ(e.target.value)} />
+      </form>
+    </>
+  );
+}
 
 function MiPerfil() {
   const { username } = useParams();
@@ -10,6 +25,8 @@ function MiPerfil() {
   // Estados
   const [usuario, setUsuario] = useState({});
   const [menuOpen, setMenuOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [editando, setEditando] = useState(false);
   const [formData, setFormData] = useState({
     fotoPerfil: "",
@@ -107,6 +124,27 @@ function MiPerfil() {
     };
   }, [username]);
 
+  // Poll unread notifications count for menu badge
+  useEffect(() => {
+    async function fetchUnread() {
+      const token = localStorage.getItem('access');
+      if (!token) return;
+      try {
+        const res = await fetch('http://127.0.0.1:8000/musica/api/notificaciones/', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (typeof data.unread !== 'undefined') setUnreadNotifications(Number(data.unread));
+      } catch (err) {
+        console.debug('No se pudo obtener contador de notificaciones (perfil):', err);
+      }
+    }
+    if (menuOpen) fetchUnread();
+    // try once on mount
+    fetchUnread();
+  }, [menuOpen]);
+
   const carruselRef = useRef(null);
   const scrollIzquierda = () => {
     if (!carruselRef.current) return;
@@ -192,6 +230,19 @@ function MiPerfil() {
     <>
       {/* Header con logo */}
       <header className="header-bar">
+        <div className="header-center">
+          {/* back button and compact search centered */}
+          <BackAndSearch />
+        </div>
+        <div className="header-right">
+          <button className="header-bell" onClick={() => setPanelOpen(true)} aria-label="Notificaciones">
+            <svg viewBox="0 0 24 24" aria-hidden>
+              <path d="M15 17H9a3 3 0 0 1-3-3V9a6 6 0 1 1 12 0v5a3 3 0 0 1-3 3z" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+            {unreadNotifications > 0 && <span className="header-badge">{unreadNotifications}</span>}
+          </button>
+        </div>
         <div className="logo">
           ListenList <span>beta</span>
         </div>
@@ -213,6 +264,7 @@ function MiPerfil() {
         </ul>
       </nav>
 
+        <NotificationPanel open={panelOpen} onClose={() => setPanelOpen(false)} />
       {/* Contenedor principal del perfil */}
       <div className="perfil-container">
         <div

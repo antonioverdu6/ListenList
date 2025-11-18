@@ -59,7 +59,11 @@ function Buscar() {
       );
       if (!res.ok) throw new Error("Error en la API de artistas");
       const data = await res.json();
-      setResultados(data);
+      // Deduplicate artists by name (some duplicates may exist in DB)
+      const unique = Array.isArray(data)
+        ? data.filter((v, i, a) => a.findIndex(t => (t.nombre || '').toLowerCase() === (v.nombre || '').toLowerCase()) === i)
+        : [];
+      setResultados(unique);
     } catch (err) {
       console.error("Error buscando artistas:", err);
       setResultados([]);

@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import NotificationPanel from "../components/NotificationPanel";
 import { refreshAccessToken } from "../utils/auth";
 import "../styles/styles_artista.css";
 import "../styles/styles_detalle.css"; // import shared detalle styles for comments layout
 
 function DetalleArtista() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const [searchQ, setSearchQ] = useState("");
+
   const [artista, setArtista] = useState(null);
   const [siguiendo, setSiguiendo] = useState(false);
   const [notificacionesActivas, setNotificacionesActivas] = useState(false);
@@ -17,6 +21,8 @@ function DetalleArtista() {
   const [comentarioEditando, setComentarioEditando] = useState(null);
   const [textoEditando, setTextoEditando] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   useEffect(() => {
     async function fetchArtista() {
@@ -75,29 +81,30 @@ function DetalleArtista() {
     fetchArtista();
   }, [id]);
 
-    const formatGeneros = (generos) => {
-      if (!generos) return '';
-      // If it's not an array, wrap it so we can treat uniformly
-      const lista = Array.isArray(generos) ? generos : [generos];
-      const nombres = lista.map((g) => {
-        if (!g) return null;
-        if (typeof g === 'string') return g;
-        if (typeof g === 'object') {
-          // common shapes: { nombre }, { name }, Django-serialized { fields: { nombre } }
-          if (g.nombre) return g.nombre;
-          if (g.name) return g.name;
-          if (g.fields && (g.fields.nombre || g.fields.name)) return g.fields.nombre || g.fields.name;
-          // sometimes the object can be nested or contain arrays
-          if (Array.isArray(g) && g.length) {
-            const inner = g[0];
-            if (inner && (inner.nombre || inner.name)) return inner.nombre || inner.name;
-          }
-        }
-        return null;
-      }).filter(Boolean);
+  // Fetch unread notifications count when appropriate
+  useEffect(() => {
+    async function fetchUnread() {
+      const token = localStorage.getItem('access');
+      if (!token) return;
+      try {
+        const res = await fetch('http://127.0.0.1:8000/musica/api/notificaciones/', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (typeof data.unread !== 'undefined') setUnreadNotifications(Number(data.unread));
+      } catch (err) {
+        console.debug('No se pudo obtener contador de notificaciones:', err);
+      }
+    }
 
-      return nombres.join(', ');
-    };
+    // Fetch when component mounts and when menu opens
+    if (menuOpen) fetchUnread();
+    // also try once on mount
+    if (!menuOpen) fetchUnread();
+  }, [menuOpen]);
+
+    
 
     // Return array of genero names (suitable for rendering tags)
     const getGenerosArray = (generos) => {
@@ -265,9 +272,36 @@ function DetalleArtista() {
 
   if (!artista) return <p style={{ color: "white" }}>Cargando...</p>;
 
+  const onSubmitSearch = (e) => {
+    e.preventDefault();
+    if (!searchQ.trim()) return;
+    navigate(`/buscar?q=${encodeURIComponent(searchQ.trim())}`);
+  };
+
   return (
     <>
       <header className="header-bar">
+        <div className="header-center">
+          <button className="back-btn" onClick={() => navigate(-1)} aria-label="Volver">Volver</button>
+          <form className="header-search" onSubmit={onSubmitSearch}>
+            <input
+              className="header-search-input"
+              type="text"
+              placeholder="Buscar..."
+              value={searchQ}
+              onChange={(e) => setSearchQ(e.target.value)}
+            />
+          </form>
+        </div>
+        <div className="header-right">
+          <button className="header-bell" onClick={() => setPanelOpen(true)} aria-label="Notificaciones">
+            <svg viewBox="0 0 24 24" aria-hidden>
+              <path d="M15 17H9a3 3 0 0 1-3-3V9a6 6 0 1 1 12 0v5a3 3 0 0 1-3 3z" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+            {unreadNotifications > 0 && <span className="header-badge">{unreadNotifications}</span>}
+          </button>
+        </div>
         <div className="logo">ListenList <span>beta</span></div>
       </header>
 
@@ -275,12 +309,14 @@ function DetalleArtista() {
 
       <nav className={`side-menu ${menuOpen ? "show" : ""}`}>
         <ul>
-          <li><Link to="/">Inicio</Link></li>
-          <li><Link to="/perfil">Mi Perfil</Link></li>
-          <li><Link to="#">ListenList Plus</Link></li>
-          <li><Link to="#">Configuración</Link></li>
+          <li><Link to="/" className="side-menu-link">Inicio</Link></li>
+          <li><Link to="/perfil" className="side-menu-link">Mi Perfil</Link></li>
+          <li><Link to="#" className="side-menu-link">ListenList Plus</Link></li>
+          <li><Link to="#" className="side-menu-link">Configuración</Link></li>
         </ul>
       </nav>
+
+      <NotificationPanel open={panelOpen} onClose={() => setPanelOpen(false)} />
 
       <div className="detalle-artista">
 

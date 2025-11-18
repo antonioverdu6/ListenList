@@ -12,6 +12,8 @@ from .audd_api import obtener_letra
 from datetime import date, timedelta
 from .utils import formatear_fecha, normalizar_fecha, formatear_duracion
 from .serializers import ArtistaSerializer, AlbumSerializer, CancionSerializer, ListaMusicalSerializer, AlbumDetailSerializer, ComentarioAlbumSerializer, UsuarioSerializer, PerfilSerializer
+from .serializers import NotificacionSerializer
+from .models import Notificacion
 from rest_framework import generics
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.contrib.auth.models import User
@@ -920,6 +922,37 @@ def artistas_seguidos(request, username):
             'imagen_url': a.imagen_url,
         })
     return Response(data)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def notificaciones_lista(request):
+    """Devuelve las notificaciones del usuario autenticado (más recientes primero) y el conteo de no leídas."""
+    qs = Notificacion.objects.filter(destinatario=request.user).order_by('-fecha_creacion')[:50]
+    serializer = NotificacionSerializer(qs, many=True)
+    unread_count = Notificacion.objects.filter(destinatario=request.user, leido=False).count()
+    return Response({
+        'unread': unread_count,
+        'results': serializer.data,
+    })
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def notificacion_marcar_leida(request, pk):
+    """Marca una notificación como leída (si pertenece al usuario)."""
+    notif = get_object_or_404(Notificacion, id=pk, destinatario=request.user)
+    notif.leido = True
+    notif.save(update_fields=['leido'])
+    return Response({"success": True})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def notificaciones_marcar_todas_leidas(request):
+    """Marca todas las notificaciones del usuario como leídas."""
+    Notificacion.objects.filter(destinatario=request.user, leido=False).update(leido=True)
+    return Response({"success": True})
 
 
 # === BUSCAR ÁLBUMES ===

@@ -20,7 +20,7 @@ function App() {
         <Route path="/cancion/:spotifyId" element={<DetalleCancion />} />
         <Route path="/album/:spotify_id" element={<DetalleAlbum />} />
         <Route path="/perfil/:username" element={<MiPerfil />} />
-        <Route path="/artista/:id" element={<DetalleArtista />} />
+  <Route path="/artista/:id" element={<DetalleArtista />} />
       </Routes>
     </Router>
   );

@@ -207,3 +207,41 @@ class SeguimientoArtista(models.Model):
 
     def __str__(self):
         return f"{self.seguidor.username} → {self.artista.nombre} (notif={self.notificaciones})"
+
+
+class Notificacion(models.Model):
+    """Notificaciones para los usuarios.
+
+    - destinatario: usuario que recibe la notificación
+    - tipo: un pequeño tag para clasificar la notificación ('follow','comment','reply','artist','system',...)
+    - origen_user / origen_artista: opcionales para identificar el actor
+    - contenido: texto corto mostrado en la lista
+    - enlace: ruta relativa en frontend a la que llevar al usuario (p. ej. '/cancion/...')
+    - leido: marca si fue leída
+    - fecha_creacion: timestamp
+    """
+    TIPO_CHOICES = [
+        ("follow", "Follow"),
+        ("comment", "Comment"),
+        ("reply", "Reply"),
+        ("artist", "Artist Activity"),
+        ("system", "System"),
+    ]
+
+    destinatario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notificaciones')
+    tipo = models.CharField(max_length=30, choices=TIPO_CHOICES, default='system')
+    origen_user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='notificaciones_enviadas')
+    origen_artista = models.ForeignKey(Artista, null=True, blank=True, on_delete=models.SET_NULL, related_name='notificaciones_artista')
+    contenido = models.TextField(blank=True, null=True)
+    enlace = models.CharField(max_length=500, blank=True, null=True)
+    leido = models.BooleanField(default=False, db_index=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-fecha_creacion']
+        indexes = [
+            models.Index(fields=['destinatario', 'leido', 'fecha_creacion']),
+        ]
+
+    def __str__(self):
+        return f"Notificacion(to={self.destinatario.username}, tipo={self.tipo}, leido={self.leido})"

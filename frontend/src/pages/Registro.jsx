@@ -56,7 +56,8 @@ function RegistroForm() {
 
       if (response.ok) {
         console.log("Registro exitoso");
-        navigate("/login");
+        // After successful registration, go directly to inicio (home)
+        navigate("/");
       } else {
         // Convertir objeto de error a string legible
         const errorMessage = data.error

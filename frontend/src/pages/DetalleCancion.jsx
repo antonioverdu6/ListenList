@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback} from "react";
 import "../styles/styles_detalle.css";
 import { refreshAccessToken } from "../utils/auth";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import NotificationPanel from "../components/NotificationPanel";
 
 
 
@@ -9,6 +10,8 @@ import { useParams, Link } from "react-router-dom";
 function DetalleCancion() {
   const { spotifyId } = useParams();
   const [cancion, setCancion] = useState(null);
+  const navigate = useNavigate();
+  const [searchQ, setSearchQ] = useState("");
   const [letra, setLetra] = useState("");
   const [userRating, setUserRating] = useState(null);
   const [avgRating, setAvgRating] = useState(0);
@@ -16,6 +19,8 @@ function DetalleCancion() {
   const [cancionesRecomendadas, setCancionesRecomendadas] = useState([]);
   const [comentarios, setComentarios] = useState([]);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [showNuevoComentario, setShowNuevoComentario] = useState(false);
   const [nuevoComentarioTexto, setNuevoComentarioTexto] = useState("");
   const [respuestaForms, setRespuestaForms] = useState({});
@@ -119,6 +124,25 @@ function DetalleCancion() {
     const interval = setInterval(fetchRating, 10000);
     return () => clearInterval(interval);
   }, [fetchCancion, fetchRating]);
+
+  useEffect(() => {
+    async function fetchUnread() {
+      const token = localStorage.getItem('access');
+      if (!token) return;
+      try {
+        const res = await fetch('http://127.0.0.1:8000/musica/api/notificaciones/', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (typeof data.unread !== 'undefined') setUnreadNotifications(Number(data.unread));
+      } catch (err) {
+        console.debug('No se pudo obtener contador de notificaciones (cancion):', err);
+      }
+    }
+    if (menuOpen) fetchUnread();
+    if (!menuOpen) fetchUnread();
+  }, [menuOpen]);
 
   // Asegurarnos de que al entrar en la página la vista esté en la parte superior.
   // Esto evita que, al navegar desde un álbum u otra página, el scroll se mantenga a mitad.
@@ -297,10 +321,37 @@ function DetalleCancion() {
   if (error) return <p style={{ color: "crimson" }}>Error: {error}</p>;
   if (!cancion) return <p>Cargando...</p>;
 
+  const onSubmitSearch = (e) => {
+    e.preventDefault();
+    if (!searchQ.trim()) return;
+    navigate(`/buscar?q=${encodeURIComponent(searchQ.trim())}`);
+  };
+
   return (
     <>
       
       <header className="header-bar">
+        <div className="header-center">
+          <button className="back-btn" onClick={() => navigate(-1)} aria-label="Volver">Volver</button>
+          <form className="header-search" onSubmit={onSubmitSearch}>
+            <input
+              className="header-search-input"
+              type="text"
+              placeholder="Buscar..."
+              value={searchQ}
+              onChange={(e) => setSearchQ(e.target.value)}
+            />
+          </form>
+        </div>
+        <div className="header-right">
+          <button className="header-bell" onClick={() => setPanelOpen(true)} aria-label="Notificaciones">
+            <svg viewBox="0 0 24 24" aria-hidden>
+              <path d="M15 17H9a3 3 0 0 1-3-3V9a6 6 0 1 1 12 0v5a3 3 0 0 1-3 3z" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+            {unreadNotifications > 0 && <span className="header-badge">{unreadNotifications}</span>}
+          </button>
+        </div>
         <div className="logo">
           ListenList <span>beta</span>
         </div>
@@ -314,19 +365,21 @@ function DetalleCancion() {
       <nav className={`side-menu ${menuOpen ? "show" : ""}`}>
         <ul>
           <li>
-            <Link to="/">Inicio</Link>
+            <Link to="/" className="side-menu-link">Inicio</Link>
           </li>
           <li>
-            <Link to="#">Mi Perfil</Link>
+            <Link to="/perfil" className="side-menu-link">Mi Perfil</Link>
           </li>
           <li>
-            <Link to="#">ListenList Plus</Link>
+            <Link to="#" className="side-menu-link">ListenList Plus</Link>
           </li>
           <li>
-            <Link to="#">Configuración</Link>
+            <Link to="#" className="side-menu-link">Configuración</Link>
           </li>
         </ul>
       </nav>
+
+      <NotificationPanel open={panelOpen} onClose={() => setPanelOpen(false)} />
 
       <div className="detalle-cancion-page">
         <h1>{cancion.titulo ?? "Sin título"}</h1>
