@@ -797,6 +797,56 @@ def seguidores_y_siguiendo(request, username):
         "siguiendo": siguiendo_count
     })
 
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def seguidores_list(request, username):
+    """Devuelve la lista de usuarios que siguen a <username>.
+    Respuesta: [{id, username, fotoPerfil, isFollowing}, ...]
+    """
+    user = get_object_or_404(User, username=username)
+    qs = Seguimiento.objects.filter(seguido=user).select_related('seguidor')
+    data = []
+    for s in qs:
+        u = s.seguidor
+        perfil = getattr(u, 'perfil', None)
+        foto = getattr(perfil, 'fotoPerfil', None) if perfil else None
+        is_following = False
+        if request.user and request.user.is_authenticated:
+            is_following = Seguimiento.objects.filter(seguidor=request.user, seguido=u).exists()
+        data.append({
+            'id': u.id,
+            'username': u.username,
+            'fotoPerfil': foto,
+            'isFollowing': bool(is_following),
+        })
+    return Response(data)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def siguiendo_list(request, username):
+    """Devuelve la lista de usuarios a los que <username> sigue.
+    Respuesta: [{id, username, fotoPerfil, isFollowing}, ...]
+    """
+    user = get_object_or_404(User, username=username)
+    qs = Seguimiento.objects.filter(seguidor=user).select_related('seguido')
+    data = []
+    for s in qs:
+        u = s.seguido
+        perfil = getattr(u, 'perfil', None)
+        foto = getattr(perfil, 'fotoPerfil', None) if perfil else None
+        is_following = False
+        if request.user and request.user.is_authenticated:
+            is_following = Seguimiento.objects.filter(seguidor=request.user, seguido=u).exists()
+        data.append({
+            'id': u.id,
+            'username': u.username,
+            'fotoPerfil': foto,
+            'isFollowing': bool(is_following),
+        })
+    return Response(data)
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def comprobar_seguimiento(request, username):

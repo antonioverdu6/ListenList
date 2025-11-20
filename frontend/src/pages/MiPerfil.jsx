@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import "../styles/miperfil.css";
 import Footer from "../components/Footer";
 import NotificationPanel from "../components/NotificationPanel";
+import UserListPopover from "../components/UserListPopover";
 import { refreshAccessToken } from "../utils/auth";
 
 // Small reusable back+search component used in headers
@@ -39,6 +40,10 @@ function MiPerfil() {
   const [siguiendo, setSiguiendo] = useState(false);
   const [contador, setContador] = useState({ seguidores: 0, siguiendo: 0 });
   const [loading, setLoading] = useState(true);
+  const [isOpenFollowers, setIsOpenFollowers] = useState(false);
+  const [isOpenFollowing, setIsOpenFollowing] = useState(false);
+  const [followersList, setFollowersList] = useState([]);
+  const [followingList, setFollowingList] = useState([]);
 
   // Cargar perfil del usuario
   useEffect(() => {
@@ -64,34 +69,63 @@ function MiPerfil() {
     fetchPerfil();
   }, [username]);
 
-  // Cargar estado de seguimiento y contadores
-  useEffect(() => {
-    const fetchSeguimiento = async () => {
+  // Ensure token is valid (refresh if expired) and return token + username from payload
+  const ensureToken = useCallback(async () => {
+    let token = localStorage.getItem('access');
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (Date.now() / 1000 > payload.exp) {
+        token = await refreshAccessToken();
+      }
+      return { token, username: payload.username || localStorage.getItem('username') };
+    } catch (err) {
       try {
-        const token = localStorage.getItem("access");
-        const currentUser = localStorage.getItem("username");
+        token = await refreshAccessToken();
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return { token, username: payload.username || localStorage.getItem('username') };
+      } catch (e) {
+        return null;
+      }
+    }
+  }, []);
 
-        // Contadores
-        const resCont = await fetch(`http://127.0.0.1:8000/musica/api/seguidores_y_siguiendo/${username}/`);
+  // Cargar estado de seguimiento y contadores
+  const fetchSeguimiento = useCallback(async () => {
+    try {
+      const tokenInfo = await ensureToken();
+      const token = tokenInfo ? tokenInfo.token : null;
+      const currentUser = tokenInfo ? tokenInfo.username : localStorage.getItem('username');
+
+      // Contadores
+      const resCont = await fetch(`http://127.0.0.1:8000/musica/api/seguidores_y_siguiendo/${username}/`);
+      if (resCont.ok) {
         const dataCont = await resCont.json();
         setContador(dataCont);
-
-        // Estado de seguimiento
-        if (token && currentUser && currentUser !== username) {
-          const resSeg = await fetch(`http://127.0.0.1:8000/musica/api/comprobar_seguimiento/${username}/`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (resSeg.ok) {
-            const dataSeg = await resSeg.json();
-            setSiguiendo(dataSeg.siguiendo);
-          }
-        }
-      } catch (err) {
-        console.error("Error obteniendo seguimiento:", err);
       }
-    };
+
+      // Estado de seguimiento
+      if (token && currentUser && currentUser !== username) {
+        const resSeg = await fetch(`http://127.0.0.1:8000/musica/api/comprobar_seguimiento/${username}/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (resSeg.ok) {
+          const dataSeg = await resSeg.json();
+          setSiguiendo(Boolean(dataSeg.siguiendo));
+        } else if (resSeg.status === 401) {
+          setSiguiendo(false);
+        }
+      } else {
+        if (currentUser === username) setSiguiendo(false);
+      }
+    } catch (err) {
+      console.error("Error obteniendo seguimiento:", err);
+    }
+  }, [ensureToken, username]);
+
+  useEffect(() => {
     fetchSeguimiento();
-  }, [username]);
+  }, [fetchSeguimiento]);
 
   // Cargar artistas seguidos (carrusel)
   useEffect(() => {
@@ -157,24 +191,26 @@ function MiPerfil() {
 
   // Función para seguir/dejar de seguir
   const handleToggleFollow = async () => {
-    const token = localStorage.getItem("access");
-    const currentUser = localStorage.getItem("username");
-    if (!token) return alert("Debes iniciar sesión.");
+    const tokenInfo = await ensureToken();
+    if (!tokenInfo) return alert('Debes iniciar sesión.');
+    const currentUser = tokenInfo.username || localStorage.getItem('username');
     if (currentUser === username) return;
 
     try {
       const res = await fetch(`http://127.0.0.1:8000/musica/api/toggle_seguir/${username}/`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenInfo.token}` },
       });
+      if (!res.ok) {
+        console.error('toggle follow failed', res.status);
+        return;
+      }
       const data = await res.json();
-      setSiguiendo(data.siguiendo);
-      setContador((prev) => ({
-        ...prev,
-        seguidores: prev.seguidores + (data.siguiendo ? 1 : -1),
-      }));
+      setSiguiendo(Boolean(data.siguiendo));
+      // Refresh counters from server to avoid local-delta errors
+      await fetchSeguimiento();
     } catch (err) {
-      console.error("Error al seguir/dejar de seguir:", err);
+      console.error('Error al seguir/dejar de seguir:', err);
     }
   };
 
@@ -225,6 +261,71 @@ function MiPerfil() {
   const banner = usuario.banner || "/default-banner.jpg";
   const fotoPerfil = usuario.foto_perfil || "/default-avatar.png";
   const nombre = usuario.nombre;
+
+  // Followers / following lists will be fetched on demand from the backend endpoints
+  // Endpoint: GET /musica/api/seguidores/<username>/ and /musica/api/siguiendo/<username>/
+  // The server returns [{ id, username, fotoPerfil, isFollowing }, ...]
+
+  const fetchFollowers = async () => {
+    try {
+      const tokenInfo = await ensureToken();
+      const headers = tokenInfo ? { Authorization: `Bearer ${tokenInfo.token}` } : {};
+      const res = await fetch(`http://127.0.0.1:8000/musica/api/seguidores/${username}/`, { headers });
+      if (!res.ok) throw new Error('Error fetching followers');
+      const data = await res.json();
+      setFollowersList(data || []);
+    } catch (err) {
+      console.error('Error cargando seguidores:', err);
+      setFollowersList([]);
+    }
+  };
+
+  const fetchFollowing = async () => {
+    try {
+      const tokenInfo = await ensureToken();
+      const headers = tokenInfo ? { Authorization: `Bearer ${tokenInfo.token}` } : {};
+      const res = await fetch(`http://127.0.0.1:8000/musica/api/siguiendo/${username}/`, { headers });
+      if (!res.ok) throw new Error('Error fetching following');
+      const data = await res.json();
+      setFollowingList(data || []);
+    } catch (err) {
+      console.error('Error cargando siguiendo:', err);
+      setFollowingList([]);
+    }
+  }; 
+
+  // Toggle follow/unfollow for a given target username (called from the popover)
+  const handleToggleFollowUser = async (targetUsername) => {
+    const tokenInfo = await ensureToken();
+    if (!tokenInfo) return alert('Debes iniciar sesión para seguir a alguien.');
+    try {
+      const res = await fetch(`http://127.0.0.1:8000/musica/api/toggle_seguir/${targetUsername}/`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenInfo.token}` },
+      });
+      if (!res.ok) {
+        console.error('toggle follow failed', res.status);
+        return;
+      }
+      const data = await res.json();
+
+      // Update local lists: set isFollowing for the affected user
+      setFollowersList(prev => prev.map(u => (u.username === targetUsername ? { ...u, isFollowing: !!data.siguiendo } : u)));
+      setFollowingList(prev => prev.map(u => (u.username === targetUsername ? { ...u, isFollowing: !!data.siguiendo } : u)));
+
+      // If we are viewing our own profile page, update the 'siguiendo' counter
+      if (tokenInfo.username === username) {
+        // Re-fetch counters instead of local delta
+        await fetchSeguimiento();
+      }
+      // Refresh lists and counters from server to ensure consistency
+      await fetchFollowers();
+      await fetchFollowing();
+      await fetchSeguimiento();
+    } catch (err) {
+      console.error('Error toggling follow:', err);
+    }
+  };
 
   return (
     <>
@@ -288,12 +389,31 @@ function MiPerfil() {
                   className={`btn-seguir ${siguiendo ? "siguiendo" : ""}`}
                   onClick={handleToggleFollow}
                 >
-                  {siguiendo ? "Dejar de seguir" : "Seguir"}
+                  {siguiendo ? "Siguiendo" : "Seguir"}
                 </button>
               )}
               <div className="seguimiento-contadores">
-                <span>{contador.seguidores} seguidores</span> ·{" "}
-                <span>{contador.siguiendo} seguidos</span>
+                <span
+                  data-testid="followers-trigger"
+                  role="button"
+                  aria-haspopup="dialog"
+                  tabIndex={0}
+                  onClick={async () => { await fetchFollowers(); setIsOpenFollowers(true); setIsOpenFollowing(false); }}
+                  onKeyDown={async (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); await fetchFollowers(); setIsOpenFollowers(true); setIsOpenFollowing(false); } }}
+                >
+                  {contador.seguidores} seguidores
+                </span>
+                {' '}·{' '}
+                <span
+                  data-testid="following-trigger"
+                  role="button"
+                  aria-haspopup="dialog"
+                  tabIndex={0}
+                  onClick={async () => { await fetchFollowing(); setIsOpenFollowing(true); setIsOpenFollowers(false); }}
+                  onKeyDown={async (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); await fetchFollowing(); setIsOpenFollowing(true); setIsOpenFollowers(false); } }}
+                >
+                  {contador.siguiendo} seguidos
+                </span>
               </div>
             </div>
 
@@ -437,6 +557,27 @@ function MiPerfil() {
           </div>
         </section>
       </div>
+
+      {/* Popovers para seguidores / siguiendo (sin navegar de ruta) */}
+      {isOpenFollowers && (
+        <UserListPopover
+          title="Seguidores"
+          users={followersList}
+          dataTestId="followers-dialog"
+          onClose={() => setIsOpenFollowers(false)}
+          onToggleFollow={(targetUsername) => handleToggleFollowUser(targetUsername)}
+        />
+      )}
+
+      {isOpenFollowing && (
+        <UserListPopover
+          title="Siguiendo"
+          users={followingList}
+          dataTestId="following-dialog"
+          onClose={() => setIsOpenFollowing(false)}
+          onToggleFollow={(targetUsername) => handleToggleFollowUser(targetUsername)}
+        />
+      )}
 
       <Footer />
     </>
