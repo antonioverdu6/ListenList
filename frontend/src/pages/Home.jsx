@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import "../styles/styles.css";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import FondoBurbujas from "../components/FondoBurbujas";
@@ -8,8 +8,7 @@ import FondoBurbujas from "../components/FondoBurbujas";
 
 function Home() {
   const [query, setQuery] = useState("");
-  const navigate = useNavigate(); 
-  const username = localStorage.getItem("username");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -21,11 +20,21 @@ function Home() {
   return (
     <>
       <FondoBurbujas />
-      <header>
-        <div className="logo">
+      <header className={`home-header ${mobileMenuOpen ? 'menu-open' : ''}`}>
+        <Link to="/" className="logo">
           ListenList <span>beta</span>
+        </Link>
+        <button
+          className="mobile-menu-btn"
+          aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
+          onClick={() => setMobileMenuOpen((s) => !s)}
+        >
+          <span className="hamburger" />
+        </button>
+
+        <div className={`home-nav-wrapper ${mobileMenuOpen ? "open" : ""}`}>
+          <Navbar />
         </div>
-        <Navbar />
       </header>
 
       <section className="hero">

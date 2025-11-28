@@ -6,6 +6,7 @@ import DetalleAlbum from "./pages/DetalleAlbum";
 import Login from "./pages/Login";
 import Registro from "./pages/Registro";
 import MiPerfil from "./pages/MiPerfil";
+import Mensajes from "./pages/Mensajes";
 import DetalleArtista from "./pages/DetalleArtista";
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
         <Route path="/cancion/:spotifyId" element={<DetalleCancion />} />
         <Route path="/album/:spotify_id" element={<DetalleAlbum />} />
         <Route path="/perfil/:username" element={<MiPerfil />} />
+        <Route path="/mensajes" element={<Mensajes />} />
   <Route path="/artista/:id" element={<DetalleArtista />} />
       </Routes>
     </Router>

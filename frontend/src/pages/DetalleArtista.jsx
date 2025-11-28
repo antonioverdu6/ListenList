@@ -8,6 +8,7 @@ import "../styles/styles_detalle.css"; // import shared detalle styles for comme
 function DetalleArtista() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const meUsername = localStorage.getItem('username');
   const [searchQ, setSearchQ] = useState("");
 
   const [artista, setArtista] = useState(null);
@@ -302,7 +303,7 @@ function DetalleArtista() {
             {unreadNotifications > 0 && <span className="header-badge">{unreadNotifications}</span>}
           </button>
         </div>
-        <div className="logo">ListenList <span>beta</span></div>
+        <Link to="/" className="logo">ListenList <span>beta</span></Link>
       </header>
 
       <div className={`menu-btn ${menuOpen ? "active" : ""}`} onClick={() => setMenuOpen(!menuOpen)}></div>
@@ -310,7 +311,7 @@ function DetalleArtista() {
       <nav className={`side-menu ${menuOpen ? "show" : ""}`}>
         <ul>
           <li><Link to="/" className="side-menu-link">Inicio</Link></li>
-          <li><Link to="/perfil" className="side-menu-link">Mi Perfil</Link></li>
+          {meUsername && <li><Link to={`/perfil/${meUsername}`} className="side-menu-link">Mi Perfil</Link></li>}
           <li><Link to="#" className="side-menu-link">ListenList Plus</Link></li>
           <li><Link to="#" className="side-menu-link">Configuración</Link></li>
         </ul>

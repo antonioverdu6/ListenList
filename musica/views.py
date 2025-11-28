@@ -1028,3 +1028,54 @@ def buscar_albums(request):
         for a in albums
     ]
     return Response(data)
+
+# === PICKS (Your Picks) ===
+@api_view(["GET", "PUT"])
+@permission_classes([IsAuthenticated])
+def picks_detail(request, username):
+    """Get or update the authenticated user's picks.
+
+    - GET: returns Perfil.picks for the user <username> (must match request.user)
+    - PUT: accepts JSON body {"picks": [slot0, slot1, slot2]} and stores in Perfil.picks
+      Each slot can be null or an object with keys: id, type, name, artist, imageUrl
+    """
+    if request.user.username != username:
+        return Response({"detail": "No autorizado"}, status=status.HTTP_403_FORBIDDEN)
+
+    user = get_object_or_404(User, username=username)
+    perfil, _ = Perfil.objects.get_or_create(usuario=user)
+
+    if request.method == "GET":
+        picks = perfil.picks if perfil.picks is not None else [None, None, None]
+        # ensure exactly 3 slots
+        if not isinstance(picks, list):
+            picks = [None, None, None]
+        if len(picks) < 3:
+            picks = picks + [None] * (3 - len(picks))
+        elif len(picks) > 3:
+            picks = picks[:3]
+        return Response({"picks": picks})
+
+    # PUT
+    data = request.data or {}
+    incoming = data.get("picks", [None, None, None])
+    # Validate structure: list of length up to 3; entries null or dict with allowed keys
+    valid = []
+    if not isinstance(incoming, list):
+        return Response({"detail": "Formato inválido"}, status=status.HTTP_400_BAD_REQUEST)
+    for i in range(min(3, len(incoming))):
+        it = incoming[i]
+        if it is None:
+            valid.append(None)
+            continue
+        if not isinstance(it, dict):
+            return Response({"detail": f"Slot {i} inválido"}, status=status.HTTP_400_BAD_REQUEST)
+        allowed = {"id", "type", "name", "artist", "imageUrl"}
+        pruned = {k: it.get(k) for k in allowed}
+        valid.append(pruned)
+    # pad to 3
+    while len(valid) < 3:
+        valid.append(None)
+    perfil.picks = valid
+    perfil.save(update_fields=["picks"])
+    return Response({"picks": perfil.picks})

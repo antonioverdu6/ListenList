@@ -11,6 +11,7 @@ function DetalleCancion() {
   const { spotifyId } = useParams();
   const [cancion, setCancion] = useState(null);
   const navigate = useNavigate();
+  const meUsername = localStorage.getItem('username');
   const [searchQ, setSearchQ] = useState("");
   const [letra, setLetra] = useState("");
   const [userRating, setUserRating] = useState(null);
@@ -352,9 +353,9 @@ function DetalleCancion() {
             {unreadNotifications > 0 && <span className="header-badge">{unreadNotifications}</span>}
           </button>
         </div>
-        <div className="logo">
+        <Link to="/" className="logo">
           ListenList <span>beta</span>
-        </div>
+        </Link>
       </header>
 
       <div
@@ -367,9 +368,11 @@ function DetalleCancion() {
           <li>
             <Link to="/" className="side-menu-link">Inicio</Link>
           </li>
+          {meUsername && (
           <li>
-            <Link to="/perfil" className="side-menu-link">Mi Perfil</Link>
+            <Link to={`/perfil/${meUsername}`} className="side-menu-link">Mi Perfil</Link>
           </li>
+          )}
           <li>
             <Link to="#" className="side-menu-link">ListenList Plus</Link>
           </li>

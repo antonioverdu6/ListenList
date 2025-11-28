@@ -9,6 +9,7 @@ function DetalleAlbum() {
 
     // --- Hooks declarados primero ---
     const navigate = useNavigate();
+    const meUsername = localStorage.getItem('username');
     const [searchQ, setSearchQ] = useState("");
     const [album, setAlbum] = useState(null);
     const [canciones, setCanciones] = useState([]);
@@ -313,9 +314,7 @@ function DetalleAlbum() {
                       {unreadNotifications > 0 && <span className="header-badge">{unreadNotifications}</span>}
                     </button>
                 </div>
-                <div className="logo">
-                    ListenList <span>beta</span>
-                </div>
+                <Link to="/" className="logo">ListenList <span>beta</span></Link>
             </header>
 
             <div
@@ -328,9 +327,11 @@ function DetalleAlbum() {
                     <li>
                         <Link to="/">Inicio</Link>
                     </li>
+                    {meUsername && (
                     <li>
-                                <Link to="/perfil">Mi Perfil</Link>
+                        <Link to={`/perfil/${meUsername}`}>Mi Perfil</Link>
                     </li>
+                    )}
                     <li>
                         <Link to="#">ListenList Plus</Link>
                     </li>

@@ -168,6 +168,9 @@ class Perfil(models.Model):
     fotoPerfil = models.CharField(max_length=500, blank=True, null=True)
     banner = models.URLField(blank=True, null=True)
     biografia = models.TextField(blank=True, null=True)
+    # Persist user "Your Picks" as a small JSON blob
+    # Structure example: [{"type":"song","id":"spotify_id","name":"...","imageUrl":"..."}, ...]
+    picks = models.JSONField(blank=True, null=True, default=list)
 
     def __str__(self):
         return self.usuario.username

@@ -18,13 +18,14 @@ function Navbar() {
     <nav>
       <Link to="/">Inicio</Link>
       <Link to="/explorar">Explorar</Link>
+      <Link to="/mensajes">Mensajes</Link>
 
       {token && username && <Link to={`/perfil/${username}`}>Mi perfil</Link>}
 
       {token ? (
-        <a href="#" onClick={handleLogout} style={{ marginLeft: "2rem" }}>
+        <button type="button" onClick={handleLogout} style={{ marginLeft: "2rem", background: "transparent", border: "none", color: "inherit", cursor: "pointer" }}>
           Cerrar sesión
-        </a>
+        </button>
       ) : (
         <Link to="/login" style={{ marginLeft: "2rem" }}>
           Iniciar sesión

@@ -297,13 +297,14 @@ class PerfilSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='usuario.email', read_only=True)
     comentarios = serializers.SerializerMethodField()
     valoraciones = serializers.SerializerMethodField()
+    picks = serializers.JSONField(required=False)
 
     class Meta:
         model = Perfil
         fields = [
             'username', 'email',
             'fotoPerfil', 'banner', 'biografia',
-            'comentarios', 'valoraciones'
+            'comentarios', 'valoraciones', 'picks'
         ]
 
     def get_comentarios(self, obj):
@@ -338,6 +339,7 @@ class PerfilSerializer(serializers.ModelSerializer):
                 "itemName": v.cancion.titulo,
                 "nota": v.puntuacion,
                 "spotify_id": v.cancion.spotify_id,
+                "fecha": v.fecha,
             })
         for v in ValoracionAlbum.objects.filter(autor=obj.usuario):
             data.append({
@@ -345,14 +347,17 @@ class PerfilSerializer(serializers.ModelSerializer):
                 "itemName": v.album.titulo,
                 "nota": v.puntuacion,
                 "spotify_id": v.album.spotify_id,
+                "fecha": v.fecha,
             })
         for v in ValoracionArtista.objects.filter(autor=obj.usuario):
             data.append({
                 "itemType": "Artista",
                 "itemName": v.artista.nombre,
                 "nota": v.puntuacion,
+                "fecha": v.fecha,
             })
-        return sorted(data, key=lambda x: x["nota"], reverse=True)
+        # Ordenar por fecha (más recientes primero)
+        return sorted(data, key=lambda x: x.get("fecha") or 0, reverse=True)
 
 
 class NotificacionSerializer(serializers.ModelSerializer):

@@ -737,6 +737,15 @@ input[type="hidden"] {
     margin-left: -20px;
 }
 
+/* Ensure logo links don't show the default underline and keep color */
+a.logo, .logo {
+    text-decoration: none;
+    color: inherit;
+}
+a.logo:hover, .logo:hover {
+    text-decoration: none;
+}
+
 .logo span {
     font-size: 0.9rem;
     color: #fff;
@@ -999,6 +1008,139 @@ input[type="hidden"] {
     .toggle {
         font-size: 1.5rem;
     }
+}
+
+/* Additional mobile improvements for DetalleCancion */
+@media (max-width: 600px) {
+    /* Reduce overall page padding to fit small screens */
+    .detalle-cancion-page { padding: 0.9rem 0.75rem; }
+
+    /* Header: reserve a small top-row for logo + notis + menu, place search/back below to avoid overlap */
+    .header-bar {
+        position: relative;
+        min-height: 120px; /* increased more to prevent overlap */
+        padding-top: 12px;
+        padding-bottom: 20px; /* extra bottom space */
+    }
+
+    /* logo top-left */
+    .logo {
+        position: absolute;
+        left: 12px;
+        top: 16px;
+        margin-left: 0 !important;
+        font-size: 1.45rem;
+        z-index: 1300;
+        line-height: 1;
+    }
+
+    /* bell / notifications: top-right but left of menu button */
+    .header-right {
+        position: absolute;
+        right: 72px; /* leave more room for the circular menu button */
+        top: 50px; /* move bell further down to align with logo/menu visually */
+        z-index: 1300;
+    }
+
+    /* visual menu button: place at far right of top row */
+    .menu-btn {
+        position: absolute;
+        right: 12px;
+        top: 49px; /* align with bell visually */
+        width: 48px;
+        height: 48px;
+        border-width: 3px;
+        z-index: 1400;
+        box-sizing: border-box;
+        background-clip: padding-box;
+    }
+
+    /* Move the search/back row down so it doesn't overlap the top row */
+    .header-center {
+        display: flex;
+        flex-direction: row;
+        gap: 0.5rem;
+        align-items: center;
+        justify-content: center;
+        margin-top: 75px; /* push search down into header area but below top row */
+        width: 100%;
+        padding: 0 0.4rem;
+        box-sizing: border-box;
+        z-index: 1200;
+    }
+
+    .header-search { width: 100%; display:flex; justify-content:center; }
+    .header-search-input { width: 100%; max-width: 520px; min-width: 120px; padding: 0.45rem 0.6rem; font-size: 0.95rem; box-sizing: border-box; }
+
+    /* Stack the detail content vertically: image -> info -> valoracion -> letra */
+    .detalle-cancion { grid-template-columns: 1fr; gap: 0.8rem; }
+
+    /* Make description card more compact and avoid touching right edge */
+    .info-cancion { padding: 0.9rem 1rem; font-size: 1rem; border-radius: 12px; max-width: 100%; box-sizing: border-box; }
+    .info-cancion p { font-size: 1rem; margin: 0.35rem 0; }
+
+    /* Image: cap aggressively so it doesn't dominate the page */
+    .imagen-cancion img { width: auto; max-width: 180px; height: auto; display: block; margin: 0.4rem auto; border-radius: 12px; }
+    .imagen-cancion img:hover { transform: none; filter: none; }
+
+    /* For very small phones make the cover even smaller */
+    @media (max-width: 420px) {
+        .imagen-cancion img { max-width: 140px; }
+    }
+
+    /* Stars slightly smaller and inline */
+    .estrellas label { font-size: 1.6rem; }
+    .valoracion-box { flex-direction: column; gap: 0.4rem; align-items: flex-start; }
+
+    /* Lyrics: smaller font and padding to fit */
+    .letra-cancion { font-size: 1rem; padding: 1rem; max-height: 50vh; padding-right: 1rem; }
+    .letra-cancion pre { font-size: 0.95rem; }
+
+    /* Recommended flashcards: horizontal scroll */
+    .flashcards-container { flex-direction: row; align-items: flex-start; overflow-x: auto; gap: 0.6rem; padding: 0.4rem 0; }
+    .flashcard { min-width: 120px; width: 120px; }
+    .flashcard-img { height: 120px; }
+
+    /* Comments: make inputs full width */
+    .form-nuevo-comentario textarea, .form-respuesta textarea, textarea { width: 100%; }
+    .btn-nuevo-comentario, button { width: auto; font-size: 0.95rem; padding: 0.6rem 1rem; }
+
+    /* Ensure popovers fit screen */
+    .notif-popover, .userlist-dialog { right: 0; left: 0; margin: 0 0.4rem; max-width: calc(100% - 0.8rem); }
+}
+
+@media (max-width: 420px) {
+    .info-cancion { padding: 0.8rem; }
+    h1 { font-size: 1.6rem; }
+    h2 { font-size: 1.1rem; }
+    .logo { font-size: 1.4rem; }
+    .header-search-input { min-width: 100px; }
+    .flashcard { min-width: 110px; }
+}
+
+/* Extra mobile tweaks to remove odd offsets and ensure full-width flow */
+@media (max-width: 600px) {
+    /* remove negative logo margin that shifts layout on small viewports */
+    .logo { margin-left: 0 !important; }
+
+    /* ensure the page container uses full width */
+    .detalle-cancion-page { padding-left: 0.75rem; padding-right: 0.75rem; max-width: 100%; box-sizing: border-box; }
+
+    /* reduce big heading sizes that push layout */
+    h1 { font-size: 1.8rem; line-height: 1.1; margin: 0.2rem 0; }
+    h2 { font-size: 1.05rem; margin-bottom: 0.6rem; }
+
+    /* make image less framed so it feels native on mobile */
+    .imagen-cancion img { border-radius: 12px; border-width: 1px; }
+
+    /* reduce the heavy box-shadow/padding on info to avoid oversized cards */
+    .info-cancion { box-shadow: 0 4px 12px rgba(29,185,84,0.08); border-radius: 12px; padding: 0.9rem; }
+
+    /* ensure recommended cards don't force width growth */
+    .flashcards-container { padding-left: 6px; padding-right: 6px; }
+
+    /* ensure no horizontal overflow from large elements */
+    html, body { overflow-x: hidden; }
 }
 
 

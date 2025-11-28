@@ -21,6 +21,9 @@ header {
     z-index: 10;
 }
 
+/* Hide mobile menu button by default (desktop/tablet); it will be enabled in mobile media query */
+.mobile-menu-btn { display: none; }
+
 .logo {
     font-size: 2rem;
     font-weight: 700;
@@ -244,38 +247,295 @@ footer {
 }
 
 @media (max-width: 600px) {
+    /* Header: center logo at the very top and account for safe-area (iPhone notch) */
     header {
+        display: flex;
         flex-direction: column;
-        align-items: flex-start;
-        padding: 1rem 1.2rem;
+        align-items: center; /* center the logo */
+        padding: calc(12px + env(safe-area-inset-top, 12px)) 1.2rem 0.8rem 1.2rem;
+        box-sizing: border-box;
     }
-    .logo {
-        font-size: 1.4rem;
+
+    /* Home-specific header behaviour on mobile: ensure logo is at the very top center and nav links appear beneath */
+    .home-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        width: 100%;
+        padding-top: calc(8px + env(safe-area-inset-top, 8px));
+        box-sizing: border-box;
     }
-    nav {
-        margin-top: 0.7rem;
+
+    .home-header .logo {
+        display: block;
+        text-align: center;
+        font-size: 2.2rem; /* larger on mobile Home */
+        margin: 0.1rem 0 0.2rem 0;
+        line-height: 1;
+    }
+
+    /* Restore green badge for "beta" in mobile Home header */
+    .home-header .logo {
+        color: #ffffff !important; /* keep logo white */
+    }
+    .home-header .logo span {
+        background: #1db954 !important; /* restore green */
+        color: #ffffff !important;
+        opacity: 0.95 !important;
+        padding: 0.08em 0.45em !important;
+        margin-left: 0.45rem !important;
+        border-radius: 6px !important;
+        font-size: 0.85rem !important;
+        font-weight: 500 !important;
+    }
+
+    /* Mobile menu button (hamburger) */
+    .mobile-menu-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: none;
+        margin-top: 4rem; /* keep vertical spacing */
+        cursor: pointer;
+        color: #fff;
+        position: relative;
+    }
+    .mobile-menu-btn .hamburger {
+        width: 22px;
+        height: 2px;
+        background: #fff; /* neutral white lines, no green */
+        display: block;
+        position: relative;
+    }
+    .mobile-menu-btn .hamburger::before,
+    .mobile-menu-btn .hamburger::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        width: 22px;
+        height: 2px;
+        background: #fff; /* neutral white lines */
+    }
+    .mobile-menu-btn .hamburger::before { top: -7px; }
+    .mobile-menu-btn .hamburger::after { top: 7px; }
+
+    .home-header nav {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        padding: 0 0.6rem;
+        box-sizing: border-box;
+    }
+
+    /* By default hide the nav links inside the home header (we'll show them when wrapper.open) */
+    header.home-header nav a {
+        display: none !important;
+    }
+
+    /* Mobile wrapper that will show the nav when open */
+    .home-nav-wrapper {
+        width: 100%;
+        display: none;
+        box-sizing: border-box;
+    }
+    .home-nav-wrapper.open {
+        display: block;
+        margin-top: 0.6rem;
+        overflow: hidden; /* contain sliding animation area */
+    }
+    .home-nav-wrapper.open nav {
+        display: flex !important;
+        justify-content: center !important;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        /* prepare sliding area */
+        will-change: transform, opacity;
+    }
+    /* Restore nav link styles when menu is open */
+    .home-nav-wrapper.open nav a {
+        display: inline-block !important;
+        visibility: visible !important;
+        height: auto !important;
+        padding: 0.45rem 0.7rem !important;
+        margin: 0 !important;
+        font-size: 1rem !important;
+        color: #ffffff !important; /* force white instead of green */
+        background: rgba(255,255,255,0.04) !important; /* subtle neutral background */
+        border: 1px solid rgba(255,255,255,0.04) !important;
+        /* sliding card effect */
+        opacity: 0;
+        transform: translateY(-12px);
+        animation: menuSlideIn 380ms ease-out forwards;
+    }
+
+    .home-nav-wrapper.open nav a:hover {
+        background: rgba(255,255,255,0.08) !important;
+        color: #ffffff !important;
+    }
+
+    /* Stagger the slide-in for a card-like feel */
+    .home-nav-wrapper.open nav a:nth-child(1) { animation-delay: 40ms; }
+    .home-nav-wrapper.open nav a:nth-child(2) { animation-delay: 90ms; }
+    .home-nav-wrapper.open nav a:nth-child(3) { animation-delay: 140ms; }
+    .home-nav-wrapper.open nav a:nth-child(4) { animation-delay: 190ms; }
+    .home-nav-wrapper.open nav a:nth-child(5) { animation-delay: 240ms; }
+
+    @keyframes menuSlideIn {
+        0% { opacity: 0; transform: translateY(-12px) scale(0.98); }
+        60% { opacity: 1; transform: translateY(2px) scale(1.01); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Remove any green neon accents specifically for the hamburger/button in mobile */
+    header.home-header .mobile-menu-btn,
+    header.home-header .mobile-menu-btn .hamburger,
+    header.home-header .mobile-menu-btn .hamburger::before,
+    header.home-header .mobile-menu-btn .hamburger::after {
+        background: transparent !important;
+        box-shadow: none !important;
+        border: 0 !important;
+    }
+    /* Force the hamburger lines to be neutral (white) and not green when menu is open */
+    header.home-header .mobile-menu-btn .hamburger,
+    header.home-header.menu-open .mobile-menu-btn .hamburger,
+    header.home-header.menu-open .mobile-menu-btn .hamburger::before,
+    header.home-header.menu-open .mobile-menu-btn .hamburger::after {
+        background: #ffffff !important;
+    }
+    /* Remove any neon/green border around the button when menu is open */
+    header.home-header.menu-open .mobile-menu-btn {
+        outline: none !important;
+        box-shadow: none !important;
+        border: 0 !important;
+    }
+    .mobile-menu-btn:focus { outline: none !important; box-shadow: none !important; }
+    .mobile-menu-btn:active { outline: none !important; box-shadow: none !important; }
+
+    /* Make header visually taller at the bottom to avoid cramped look */
+    header.home-header {
+        padding-bottom: 2.4rem !important; /* make header a bit narrower than before */
+        padding-top: calc(10px + env(safe-area-inset-top, 10px));
+    }
+
+    .home-header nav a {
+        margin: 0;
+        padding: 0.45rem 0.7rem;
+        font-size: 1rem;
+        border-radius: 10px;
+        background: transparent;
+        text-align: center;
+        display: inline-block;
+    }
+
+    /* Force stronger centering and remove inline margin-left from Navbar links on mobile */
+    header.home-header {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
         width: 100%;
     }
-    nav a {
-        margin-left: 1.1rem;
-        font-size: 1rem;
+
+    header.home-header .logo {
+        margin-left: auto !important;
+        margin-right: auto !important;
+        text-align: center !important;
+        width: 100%;
     }
+
+    /* Remove any left margin coming from inline styles in Navbar (Cerrar sesión / Iniciar sesión) */
+    header.home-header nav a {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        display: inline-block;
+    }
+
+    /* Make nav items stack if they don't fit, but center each item */
+    header.home-header nav {
+        flex-direction: row; /* keep row but wrap */
+        justify-content: center !important;
+    }
+
+    /* Hide nav links inside the Home header on mobile to keep the header clean. */
+    /* Keeps the logo (which is outside nav) visible. */
+    header.home-header nav a {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+    }
+
+    /* App name centered and visually at the top */
+    .logo {
+        font-size: 1.6rem;
+        margin: 0;
+        text-align: center;
+        display: block;
+    }
+
+    /* Nav (menu buttons) centered below the logo. Keep links as touch-friendly buttons */
+    nav {
+        margin-top: 0.6rem;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        padding: 0 0.6rem;
+        box-sizing: border-box;
+    }
+    nav a {
+        margin: 0;
+        padding: 0.45rem 0.7rem;
+        font-size: 1rem;
+        border-radius: 10px;
+        background: transparent;
+        text-align: center;
+        display: inline-block;
+    }
+
+    /* Hero: keep compact but legible */
     .hero {
-        padding: 2.5rem 0.7rem 1.7rem 0.7rem;
+        padding: 2.2rem 0.8rem 1.2rem 0.8rem;
         border-radius: 0 0 18px 18px;
     }
-    .hero h1 {
-        font-size: 1.5rem;
+    .hero h1 { font-size: 2.3rem; }
+    .hero p { font-size: 1.5rem; margin-bottom: 1rem; }
+
+    /* Search box: small spacing but keep desktop behaviour (stacking handled elsewhere if needed) */
+    .search-box { max-width: 520px; margin: 0.2rem auto 0.8rem auto; padding: 0 0.4rem; box-sizing: border-box; }
+    .search-box input[type="text"], .search-box button { border-radius: 12px; }
+
+    /* Features: make cards a bit smaller and centered; keep text centered */
+    .features { gap: 1rem; margin: 1rem auto; padding: 0 0.6rem; }
+    .feature-card {
+        max-width: 260px; /* reduced size for tighter mobile layout */
+        width: 100%;
+        min-width: unset;
+        padding: 0.9rem 0.9rem;
+        margin: 0.5rem auto;
+        text-align: center; /* keep text centered */
     }
-    .features {
-        margin: 1.2rem auto 1rem auto;
-    }
-    .how-it-works {
-        padding: 1.2rem 0.7rem 1rem 0.7rem;
-        border-radius: 12px;
-    }
-    footer {
-        font-size: 0.95rem;
-        padding: 1.2rem 0.5rem 0.8rem 0.5rem;
-    }
+    .feature-card h3 { font-size: 1.8rem; margin-bottom: 0.45rem; }
+    .feature-card p { font-size: 1.5rem; line-height: 1.55; }
+
+    /* Increase general readable typography on mobile (excluding search input) */
+    nav a { font-size: 1.14rem; }
+    .how-it-works ol { font-size: 1.5rem; }
+    .how-it-works li { margin-bottom: 0.9rem; }
+    p { font-size: 1.5rem; }
+    footer { font-size: 1rem; }
+
+    /* How it works compact */
+    .how-it-works { padding: 1rem 0.8rem; border-radius: 12px; }
+    .how-it-works h2 { font-size: 1.8rem; }
+
+    /* Footer compact */
+    footer { font-size: 0.95rem; padding: 1rem 0.6rem 0.8rem 0.6rem; }
 }

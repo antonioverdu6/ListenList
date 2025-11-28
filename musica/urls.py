@@ -55,6 +55,8 @@ urlpatterns = [
     path("api/artistas_buscar/", views.buscar_artistas, name="buscar_artistas"),
     path("api/albums_buscar/", views.buscar_albums, name="buscar_albums"),
     path("api/artistas_seguidos/<str:username>/", views.artistas_seguidos, name="artistas_seguidos"),
+    # Picks management
+    path("api/picks/<str:username>/", views.picks_detail, name="picks_detail"),
     # Notificaciones
     path("api/notificaciones/", views.notificaciones_lista, name="notificaciones_lista"),
     path("api/notificaciones/<int:pk>/marcar_leida/", views.notificacion_marcar_leida, name="notificacion_marcar_leida"),

@@ -184,38 +184,37 @@ function Buscar() {
       {/* 🔽 Renderizado condicional según categoría */}
       <div className="song-grid">
         {categoria === "canciones" &&
-          resultados.map(
-            (cancion) =>
-              cancion.spotify_id && (
-                <div className="song-tile" key={cancion.spotify_id}>
-                  <Link
-                    to={`/cancion/${cancion.spotify_id}`}
-                    className="song-link"
-                  >
-                    <div className="song-cover">
-                      <img
-                        src={cancion.imagen}
-                        alt={`Portada de ${cancion.nombre}`}
-                      />
-                      {cancion.preview_url && (
-                        <audio
-                          controls
-                          src={cancion.preview_url}
-                          className="song-audio"
-                        />
-                      )}
-                    </div>
-                    <div className="song-info">
-                      <h2 className="song-title">{cancion.nombre_trunc}</h2>
-                      <p className="song-artist">{cancion.artista}</p>
-                      <p className="song-album">
-                        Álbum: <span>{cancion.album_trunc}</span>
-                      </p>
-                    </div>
-                  </Link>
-                </div>
-              )
-          )}
+          resultados.map((cancion, idx) => {
+            // Defensive: some API rows may have artista as object {id, nombre}
+            const artistaText =
+              !cancion
+                ? ""
+                : typeof cancion.artista === "string"
+                ? cancion.artista
+                : cancion.artista?.nombre || "";
+            // Use spotify_id when available, otherwise fallback to index (not ideal but prevents missing key)
+            const key = cancion?.spotify_id || `${cancion?.id || 'song'}-${idx}`;
+            if (!cancion) return null;
+            return (
+              <div className="song-tile" key={key}>
+                <Link to={`/cancion/${cancion.spotify_id || ''}`} className="song-link">
+                  <div className="song-cover">
+                    <img src={cancion.imagen} alt={`Portada de ${cancion.nombre || ''}`} />
+                    {cancion.preview_url && (
+                      <audio controls src={cancion.preview_url} className="song-audio" />
+                    )}
+                  </div>
+                  <div className="song-info">
+                    <h2 className="song-title">{cancion.nombre_trunc || cancion.nombre}</h2>
+                    <p className="song-artist">{artistaText}</p>
+                    <p className="song-album">
+                      Álbum: <span>{cancion.album_trunc || (cancion.album?.titulo || '')}</span>
+                    </p>
+                  </div>
+                </Link>
+              </div>
+            );
+          })}
 
         {categoria === "albumes" &&
           resultados.map((album) => (
