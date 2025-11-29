@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 from datetime import timedelta
 
@@ -26,12 +27,16 @@ SECRET_KEY = 'django-insecure-dg*#8-(zykqgo$2iik%%n1i62c-ya3z_o(mk+701)@xe%1x#(z
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+]
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
     'rest_framework_simplejwt',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -40,6 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'musica',
+    'mensajes',
     'rest_framework',
     'corsheaders',
 ]
@@ -100,6 +106,22 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'redmusical.wsgi.application'
+ASGI_APPLICATION = 'redmusical.asgi.application'
+
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [
+                (
+                    os.environ.get('REDIS_HOST', 'redis'),
+                    int(os.environ.get('REDIS_PORT', 6379)),
+                )
+            ],
+        },
+    }
+}
 
 
 # Database

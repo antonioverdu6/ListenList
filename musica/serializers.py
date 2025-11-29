@@ -295,6 +295,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
 class PerfilSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='usuario.username', read_only=True)
     email = serializers.EmailField(source='usuario.email', read_only=True)
+    userId = serializers.IntegerField(source='usuario.id', read_only=True)
     comentarios = serializers.SerializerMethodField()
     valoraciones = serializers.SerializerMethodField()
     picks = serializers.JSONField(required=False)
@@ -302,7 +303,7 @@ class PerfilSerializer(serializers.ModelSerializer):
     class Meta:
         model = Perfil
         fields = [
-            'username', 'email',
+            'username', 'email', 'userId',
             'fotoPerfil', 'banner', 'biografia',
             'comentarios', 'valoraciones', 'picks'
         ]

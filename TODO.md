@@ -1,0 +1,2 @@
+- [x] Connect Mensajes.jsx to backend API for shares
+- [x] Integrate WebSocket updates for shares in frontend

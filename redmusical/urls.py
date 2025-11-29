@@ -30,6 +30,7 @@ urlpatterns = [
     path('inicio/', musica_views.inicio, name='inicio'),
     path('buscar/', musica_views.buscar, name='buscar'),
     path('api/', include('musica.urls')),  # Nueva ruta para la API
+    path('api/mensajes/', include('mensajes.urls')),
     path("api/register/", musica_views.registro, name="register"),  
     path("api/login/", TokenObtainPairView.as_view(), name="login"),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),

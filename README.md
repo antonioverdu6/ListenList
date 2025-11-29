@@ -102,6 +102,12 @@ python manage.py migrate
 python manage.py runserver
 ```
 
+### Ejecutar con Docker + Redis (Channels)
+```bash
+docker compose up --build
+```
+Esto levanta Redis y el servidor ASGI (`daphne`) en el puerto `8000`.
+
 ### Set up the frontend (React)
 In another terminal, inside the frontend folder:
 ```bash
