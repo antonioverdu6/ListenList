@@ -23,9 +23,9 @@ function Navbar() {
       {token && username && <Link to={`/perfil/${username}`}>Mi perfil</Link>}
 
       {token ? (
-        <button type="button" onClick={handleLogout} style={{ marginLeft: "2rem", background: "transparent", border: "none", color: "inherit", cursor: "pointer" }}>
+        <a href="#" onClick={handleLogout} style={{ marginLeft: "2rem" }}>
           Cerrar sesión
-        </button>
+        </a>
       ) : (
         <Link to="/login" style={{ marginLeft: "2rem" }}>
           Iniciar sesión

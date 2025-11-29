@@ -34,6 +34,7 @@ function BackAndSearch() {
 
 function MiPerfil() {
   const { username } = useParams();
+  const navigate = useNavigate();
   const meUsername = localStorage.getItem('username');
 
   // Estados
@@ -594,11 +595,22 @@ function MiPerfil() {
     setCommentsPage(1);
   }, [comentarios]);
 
-  if (loading) return <p style={{ color: "white", textAlign: "center" }}>Cargando perfil...</p>;
-
   const banner = usuario.banner || "/default-banner.jpg";
   const fotoPerfil = usuario.foto_perfil || "/default-avatar.png";
   const nombre = usuario.nombre;
+  const perfilUserId = usuario.userId;
+
+  const handleMessageUser = useCallback(() => {
+    if (!perfilUserId) return;
+    const params = new URLSearchParams();
+    params.set("to", username);
+    params.set("toId", String(perfilUserId));
+    const displayName = nombre || username;
+    if (displayName) params.set("toName", displayName);
+    navigate(`/mensajes?${params.toString()}`);
+  }, [navigate, nombre, perfilUserId, username]);
+
+  if (loading) return <p style={{ color: "white", textAlign: "center" }}>Cargando perfil...</p>;
 
   // Followers / following lists will be fetched on demand from the backend endpoints
   // Endpoint: GET /musica/api/seguidores/<username>/ and /musica/api/siguiendo/<username>/
@@ -831,12 +843,23 @@ function MiPerfil() {
             {/* Seguimiento */}
             <div className="perfil-seguimiento">
               {localStorage.getItem("username") !== username && (
-                <button
-                  className={`btn-seguir ${siguiendo ? "siguiendo" : ""}`}
-                  onClick={handleToggleFollow}
-                >
-                  {siguiendo ? "Siguiendo" : "Seguir"}
-                </button>
+                <div className="perfil-actions-inline">
+                  <button
+                    className={`btn-seguir ${siguiendo ? "siguiendo" : ""}`}
+                    onClick={handleToggleFollow}
+                  >
+                    {siguiendo ? "Siguiendo" : "Seguir"}
+                  </button>
+                  {siguiendo && perfilUserId && (
+                    <button
+                      type="button"
+                      className="btn-mensaje"
+                      onClick={handleMessageUser}
+                    >
+                      Enviar mensaje
+                    </button>
+                  )}
+                </div>
               )}
               <div className="seguimiento-contadores">
                 <span
