@@ -1,3 +1,4 @@
+import API_URL from '../config/api';
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import NotificationPanel from "../components/NotificationPanel";
@@ -28,12 +29,12 @@ function DetalleArtista() {
   useEffect(() => {
     async function fetchArtista() {
       try {
-        const res = await fetch(`http://127.0.0.1:8000/musica/api/artista/${id}/`);
+        const res = await fetch(`${API_URL}/musica/api/artista/${id}/`);
         const data = await res.json();
         setArtista(data);
   // Intentamos cargar comentarios del artista (endpoint GET)
         try {
-          const resC = await fetch(`http://127.0.0.1:8000/musica/api/artistas/${id}/comentarios/`);
+          const resC = await fetch(`${API_URL}/musica/api/artistas/${id}/comentarios/`);
           if (resC.ok) {
             const d = await resC.json();
             setComentarios(d.comentarios || []);
@@ -47,7 +48,7 @@ function DetalleArtista() {
           if (token) {
             // Comprobar seguimiento (asumimos endpoint comprobador para artista)
             try {
-              const resSeg = await fetch(`http://127.0.0.1:8000/musica/api/comprobar_seguimiento_artista/${data.id}/`, {
+              const resSeg = await fetch(`${API_URL}/musica/api/comprobar_seguimiento_artista/${data.id}/`, {
                 headers: { Authorization: `Bearer ${token}` },
               });
               if (resSeg.ok) {
@@ -61,7 +62,7 @@ function DetalleArtista() {
 
             // Comprobar notificaciones (endpoint opcional por ahora)
             try {
-              const resNot = await fetch(`http://127.0.0.1:8000/musica/api/comprobar_notificacion_artista/${data.id}/`, {
+              const resNot = await fetch(`${API_URL}/musica/api/comprobar_notificacion_artista/${data.id}/`, {
                 headers: { Authorization: `Bearer ${token}` },
               });
               if (resNot.ok) {
@@ -88,7 +89,7 @@ function DetalleArtista() {
       const token = localStorage.getItem('access');
       if (!token) return;
       try {
-        const res = await fetch('http://127.0.0.1:8000/musica/api/notificaciones/', {
+        const res = await fetch(`${API_URL}/musica/api/notificaciones/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) return;

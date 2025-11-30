@@ -1,3 +1,4 @@
+import API_URL from '../config/api';
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import "../styles/styles_detalle.css";
 import { refreshAccessToken } from "../utils/auth";
@@ -91,7 +92,7 @@ function DetalleCancion() {
     if (!cancion?.id) return;
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/musica/cancion/${spotifyId}/`);
+      const response = await fetch(`${API_URL}/musica/cancion/${spotifyId}/`);
       if (!response.ok) {
         console.error("Error en la API:", response.status, response.statusText);
         return;
@@ -162,7 +163,7 @@ function DetalleCancion() {
       const token = localStorage.getItem('access');
       if (!token) return;
       try {
-        const res = await fetch('http://127.0.0.1:8000/musica/api/notificaciones/', {
+        const res = await fetch(`${API_URL}/musica/api/notificaciones/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) return;

@@ -1,3 +1,4 @@
+import API_URL from '../config/api';
 import React, { useState, useEffect, useCallback } from "react";
 import "../styles/styles_album.css";
 import { useParams, Link, useNavigate } from "react-router-dom";
@@ -57,7 +58,7 @@ function DetalleAlbum() {
     const fetchRating = useCallback(async () => {
         if (!spotify_id) return;
         try {
-            const response = await fetch(`http://127.0.0.1:8000/musica/api/album/${spotify_id}/`);
+            const response = await fetch(`${API_URL}/musica/api/album/${spotify_id}/`);
             if (!response.ok) return;
             const data = await response.json();
             setAvgRating(data.avgPuntuacion ?? 0);
@@ -273,7 +274,7 @@ function DetalleAlbum() {
             const token = localStorage.getItem('access');
             if (!token) return;
             try {
-                const res = await fetch('http://127.0.0.1:8000/musica/api/notificaciones/', {
+                const res = await fetch(`${API_URL}/musica/api/notificaciones/`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 if (!res.ok) return;

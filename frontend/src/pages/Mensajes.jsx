@@ -12,8 +12,12 @@ import NotificationPanel from "../components/NotificationPanel";
 import "../styles/mensajes.css";
 import { refreshAccessToken } from "../utils/auth";
 
-const API_BASE = "http://127.0.0.1:8000/api/mensajes";
-const WS_URL = "ws://localhost:8000/ws/mensajes/";
+import API_URL from "../config/api";
+const API_BASE = `${API_URL}/api/mensajes`;
+// Derivar host para WebSocket (asume mismo host, wss si https)
+const wsProto = API_URL.startsWith('https') ? 'wss' : 'ws';
+const host = API_URL.replace(/^https?:\/\//, '');
+const WS_URL = `${wsProto}://${host}/ws/mensajes/`;
 const API_ORIGIN = new URL(API_BASE).origin;
 
 function normalizeAvatarUrl(rawUrl) {
@@ -222,7 +226,7 @@ function Mensajes() {
   const fetchRecipientProfile = useCallback(async (username) => {
     if (!username) return null;
     try {
-      const response = await fetch(`http://127.0.0.1:8000/musica/api/usuarios/${encodeURIComponent(username)}/`);
+      const response = await fetch(`${API_URL}/musica/api/usuarios/${encodeURIComponent(username)}/`);
       if (!response.ok) return null;
       const data = await response.json();
       return normalizeProfile(data);

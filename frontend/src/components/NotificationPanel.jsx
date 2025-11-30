@@ -52,7 +52,7 @@ export default function NotificationPanel({ open, onClose, noGreen = true }) {
         return;
       }
       try {
-        const res = await fetch('http://127.0.0.1:8000/musica/api/notificaciones/', {
+        const res = await fetch(`${API_URL}/musica/api/notificaciones/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error('Error fetching notifications');
@@ -77,7 +77,7 @@ export default function NotificationPanel({ open, onClose, noGreen = true }) {
     try {
       setNotifs(prev => prev.map(n => n.id === id ? { ...n, leido: true } : n));
       setUnread(prev => Math.max(0, prev - 1));
-      await fetch(`http://127.0.0.1:8000/musica/api/notificaciones/${id}/marcar_leida/`, {
+      await fetch(`${API_URL}/musica/api/notificaciones/${id}/marcar_leida/`, {
         method: 'POST', headers: { Authorization: `Bearer ${token}` }
       });
       try { localStorage.setItem('notifications_changed', String(Date.now())); } catch(e){}
@@ -89,7 +89,7 @@ export default function NotificationPanel({ open, onClose, noGreen = true }) {
     const token = await ensureToken();
     if (!token) return alert('Debes iniciar sesión');
     try {
-      await fetch('http://127.0.0.1:8000/musica/api/notificaciones/marcar_todas_leidas/', {
+      await fetch(`${API_URL}/musica/api/notificaciones/marcar_todas_leidas/`, {
         method: 'POST', headers: { Authorization: `Bearer ${token}` }
       });
       setNotifs(prev => prev.map(n => ({ ...n, leido: true })));

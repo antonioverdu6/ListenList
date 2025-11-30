@@ -1,3 +1,4 @@
+import API_URL from '../config/api';
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import "../styles/miperfil.css";
@@ -7,9 +8,9 @@ import UserListPopover from "../components/UserListPopover";
 import { refreshAccessToken } from "../utils/auth";
 
 // URLs reales usadas por el buscador (canciones, álbumes, artistas)
-const API_URL_SONGS = 'http://127.0.0.1:8000/musica/buscar_api/';
-const API_URL_ALBUMS = 'http://127.0.0.1:8000/musica/api/albums_buscar/';
-const API_URL_ARTISTS = 'http://127.0.0.1:8000/musica/api/artistas_buscar/';
+const API_URL_SONGS = `${API_URL}/musica/buscar_api/`;
+const API_URL_ALBUMS = `${API_URL}/musica/api/albums_buscar/`;
+const API_URL_ARTISTS = `${API_URL}/musica/api/artistas_buscar/`;
 
 // Centralized endpoint map so components can reuse it (stable reference)
 const endpointMap = {
@@ -94,7 +95,7 @@ function MiPerfil() {
         if (Date.now()/1000 > payload.exp) token = await refreshAccessToken();
       } catch {}
       const payloadPicks = nextPicks.map(it => it ? ({ id: it.id, type: it.type, name: it.name, artist: it.artist || null, imageUrl: it.imageUrl || null }) : null);
-      const res = await fetch(`http://127.0.0.1:8000/musica/api/picks/${username}/`, {
+      const res = await fetch(`${API_URL}/musica/api/picks/${username}/`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ picks: payloadPicks })
@@ -157,7 +158,7 @@ function MiPerfil() {
   useEffect(() => {
     async function fetchPerfil() {
       try {
-        const res = await fetch(`http://127.0.0.1:8000/musica/api/usuarios/${username}/`);
+        const res = await fetch(`${API_URL}/musica/api/usuarios/${username}/`);
         if (!res.ok) throw new Error("No se pudo cargar el perfil");
         const data = await res.json();
         setUsuario(data);

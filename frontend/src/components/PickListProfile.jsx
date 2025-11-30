@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 
-const API_URL_SONGS = 'http://127.0.0.1:8000/musica/buscar_api/';
-const API_URL_ALBUMS = 'http://127.0.0.1:8000/musica/api/albums_buscar/';
-const API_URL_ARTISTS = 'http://127.0.0.1:8000/musica/api/artistas_buscar/';
+import API_URL from '../config/api';
+const API_URL_SONGS = `${API_URL}/musica/buscar_api/`;
+const API_URL_ALBUMS = `${API_URL}/musica/api/albums_buscar/`;
+const API_URL_ARTISTS = `${API_URL}/musica/api/artistas_buscar/`;
 
 const endpointMap = {
   songs: (qq) => `${API_URL_SONGS}?q=${encodeURIComponent(qq)}`,

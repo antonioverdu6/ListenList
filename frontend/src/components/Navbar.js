@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { refreshAccessToken } from "../utils/auth";
 import "../styles/navbar.css";
+import API_URL from "../config/api";
 
 function Navbar() {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ function Navbar() {
         return;
       }
 
-      const url = "http://127.0.0.1:8000/api/mensajes/shares/unread_count/";
+      const url = `${API_URL}/api/mensajes/shares/unread_count/`;
       async function requestWith(token) {
         return fetch(url, {
           headers: { Authorization: `Bearer ${token}` },

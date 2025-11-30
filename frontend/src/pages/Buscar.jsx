@@ -1,3 +1,4 @@
+import API_URL from '../config/api';
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import "../styles/styles_buscar.css";
@@ -19,7 +20,7 @@ function Buscar() {
     setLoading(true);
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/musica/buscar_api/?q=${encodeURIComponent(q)}`
+        `${API_URL}/musica/buscar_api/?q=${encodeURIComponent(q)}`
       );
       if (!response.ok) throw new Error("Error en la API");
       const data = await response.json();
@@ -37,7 +38,7 @@ function Buscar() {
     setLoading(true);
     try {
       const res = await fetch(
-        `http://127.0.0.1:8000/musica/api/albums_buscar/?q=${encodeURIComponent(q)}`
+        `${API_URL}/musica/api/albums_buscar/?q=${encodeURIComponent(q)}`
       );
       if (!res.ok) throw new Error("Error en la API de álbumes");
       const data = await res.json();
@@ -55,7 +56,7 @@ function Buscar() {
     setLoading(true);
     try {
       const res = await fetch(
-        `http://127.0.0.1:8000/musica/api/artistas_buscar/?q=${encodeURIComponent(q)}`
+        `${API_URL}/musica/api/artistas_buscar/?q=${encodeURIComponent(q)}`
       );
       if (!res.ok) throw new Error("Error en la API de artistas");
       const data = await res.json();
@@ -79,7 +80,7 @@ function Buscar() {
     setLoading(true);
     try {
       const res = await fetch(
-        `http://127.0.0.1:8000/musica/api/usuarios_buscar/?q=${encodeURIComponent(q)}`
+        `${API_URL}/musica/api/usuarios_buscar/?q=${encodeURIComponent(q)}`
       );
       if (!res.ok) throw new Error("Error en la API de usuarios");
       const data = await res.json();
