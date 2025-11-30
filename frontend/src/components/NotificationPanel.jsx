@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import API_URL from '../config/api';
 import { useNavigate } from 'react-router-dom';
 import { refreshAccessToken } from '../utils/auth';
 import '../styles/styles_detalle.css';

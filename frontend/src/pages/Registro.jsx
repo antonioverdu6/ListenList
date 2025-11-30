@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import API_URL from "../config/api";
 import { useNavigate, Link } from "react-router-dom";
 import { GoogleReCaptchaProvider, useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import "../styles/registro.css";
