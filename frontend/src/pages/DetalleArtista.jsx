@@ -181,7 +181,7 @@ function DetalleArtista() {
       formData.append("texto", texto);
       if (parentId) formData.append("parent_id", parentId);
 
-      const response = await fetch(`http://127.0.0.1:8000/musica/api/artistas/${artista.id}/comentarios/`, {
+      const response = await fetch(`${API_URL}/musica/api/artistas/${artista.id}/comentarios/`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -230,7 +230,7 @@ function DetalleArtista() {
     }
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/musica/api/comentario_artista/${comentarioId}/borrar/`, {
+      const response = await fetch(`${API_URL}/musica/api/comentario_artista/${comentarioId}/borrar/`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${accessToken}` },
       });
@@ -249,7 +249,7 @@ function DetalleArtista() {
     if (!accessToken) return alert("Debes iniciar sesión para editar.");
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/musica/api/comentario_artista/${comentarioId}/editar/`, {
+      const response = await fetch(`${API_URL}/musica/api/comentario_artista/${comentarioId}/editar/`, {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -356,7 +356,7 @@ function DetalleArtista() {
 
                           // Llamada al endpoint toggle para artistas.
                           // Asumimos endpoints REST con sufijo _artista; si tu backend usa otra ruta, actualiza aquí.
-                          const res = await fetch(`http://127.0.0.1:8000/musica/api/toggle_seguir_artista/${artista.id}/`, {
+                          const res = await fetch(`${API_URL}/musica/api/toggle_seguir_artista/${artista.id}/`, {
                             method: 'POST',
                             headers: { Authorization: `Bearer ${token}` },
                           });
@@ -419,7 +419,7 @@ function DetalleArtista() {
 
                           // Llamada POST a endpoint de notificaciones (puede no existir aún)
                           try {
-                            const res = await fetch(`http://127.0.0.1:8000/musica/api/toggle_notificacion_artista/${artista.id}/`, {
+                            const res = await fetch(`${API_URL}/musica/api/toggle_notificacion_artista/${artista.id}/`, {
                               method: 'POST',
                               headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
                               body: JSON.stringify({}),

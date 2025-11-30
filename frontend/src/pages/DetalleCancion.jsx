@@ -42,7 +42,7 @@ function DetalleCancion() {
   const fetchCancion = useCallback(async () => {
     try {
       // Pedimos la canción usando spotifyId
-      const response = await fetch(`http://127.0.0.1:8000/musica/cancion/${spotifyId}/`);
+      const response = await fetch(`${API_URL}/musica/cancion/${spotifyId}/`);
       if (response.status === 202) {
         const payload = await response.json().catch(() => ({}));
         const waitSeconds = payload.retryInSeconds ?? 30;
@@ -118,7 +118,7 @@ function DetalleCancion() {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/api/cancion/${cancion.id}/valorar/`,
+        `${API_URL}/api/cancion/${cancion.id}/valorar/`,
         {
           method: "POST",
           headers: {
@@ -246,7 +246,7 @@ function DetalleCancion() {
       if (parentId) formData.append("parent_id", parentId);
 
       const response = await fetch(
-        `http://127.0.0.1:8000/musica/cancion/${cancion.id}/comentario/`,
+        `${API_URL}/musica/cancion/${cancion.id}/comentario/`,
         {
           method: "POST",
           headers: {
@@ -298,7 +298,7 @@ function DetalleCancion() {
       }
 
       const response = await fetch(
-        `http://127.0.0.1:8000/musica/api/comentario/${comentarioId}/borrar/`,
+        `${API_URL}/musica/api/comentario/${comentarioId}/borrar/`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${accessToken}` },
@@ -321,7 +321,7 @@ function DetalleCancion() {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/musica/comentario/${comentarioId}/editar/`,
+        `${API_URL}/musica/comentario/${comentarioId}/editar/`,
         {
           method: "PATCH",
           headers: {

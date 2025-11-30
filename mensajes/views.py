@@ -66,7 +66,12 @@ class ShareViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.Gene
             share.is_read = True
             share.read_at = timezone.now()
             share.save(update_fields=["is_read", "read_at"])
-            self._broadcast_share("share_read", share)
+            # Broadcast robust: no debe provocar 500 si falla layer
+            try:
+                self._broadcast_share("share_read", share)
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning("Broadcast share_read falló: %s", e)
         self._mark_message_notifications_read(share, request.user)
         serializer = ShareSerializer(share, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)

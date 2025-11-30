@@ -16,13 +16,19 @@ class ShareConsumer(AsyncJsonWebsocketConsumer):
 
         self.user = user
         self.group_name = user_group_name(user.id)
-        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        try:
+            await self.channel_layer.group_add(self.group_name, self.channel_name)
+        except Exception as e:
+            logger.warning("group_add failed for user %s: %s", user.id, e)
         await self.accept()
         logger.debug("User %s connected to share channel", user.id)
 
     async def disconnect(self, close_code):
         if hasattr(self, "group_name"):
-            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+            try:
+                await self.channel_layer.group_discard(self.group_name, self.channel_name)
+            except Exception as e:
+                logger.warning("group_discard failed for user %s: %s", getattr(self, "user", None), e)
             logger.debug(
                 "User %s disconnected from share channel (code %s)",
                 getattr(self, "user", None),

@@ -90,11 +90,18 @@ CSRF_TRUSTED_ORIGINS = [
 
 # CORS Configuration
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+ADDITIONAL_CORS = os.environ.get('FRONTEND_EXTRA_ORIGINS', '')
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    FRONTEND_URL,  # URL de Netlify en producción
+    FRONTEND_URL,  # URL de Netlify en producción (si la variable apunta allí)
 ]
+
+# Parse comma-separated extra origins (https://site1,https://site2)
+if ADDITIONAL_CORS:
+    for origin in [o.strip() for o in ADDITIONAL_CORS.split(',') if o.strip()]:
+        if origin not in CORS_ALLOWED_ORIGINS:
+            CORS_ALLOWED_ORIGINS.append(origin)
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -102,6 +109,10 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     FRONTEND_URL,
 ]
+if ADDITIONAL_CORS:
+    for origin in [o.strip() for o in ADDITIONAL_CORS.split(',') if o.strip()]:
+        if origin not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(origin)
 
 # Añadir el dominio de Render si existe
 if RENDER_EXTERNAL_HOSTNAME:
@@ -128,19 +139,27 @@ WSGI_APPLICATION = 'redmusical.wsgi.application'
 ASGI_APPLICATION = 'redmusical.asgi.application'
 
 
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            'hosts': [
-                (
-                    os.environ.get('REDIS_HOST', 'redis'),
-                    int(os.environ.get('REDIS_PORT', 6379)),
-                )
-            ],
-        },
+CHANNEL_LAYER_BACKEND = os.environ.get('CHANNEL_LAYER_BACKEND', 'redis').lower()
+if CHANNEL_LAYER_BACKEND == 'memory':
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer'
+        }
     }
-}
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': [
+                    (
+                        os.environ.get('REDIS_HOST', 'redis'),
+                        int(os.environ.get('REDIS_PORT', 6379)),
+                    )
+                ],
+            },
+        }
+    }
 
 
 # Database
