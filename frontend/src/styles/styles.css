@@ -502,39 +502,53 @@ footer {
 
     /* Hero: keep compact but legible */
     .hero {
-        padding: 2.2rem 0.8rem 1.2rem 0.8rem;
+        padding: 1.5rem 0.8rem 1rem 0.8rem;
         border-radius: 0 0 18px 18px;
     }
-    .hero h1 { font-size: 2.3rem; }
-    .hero p { font-size: 1.5rem; margin-bottom: 1rem; }
+    .hero h1 { font-size: 1.3rem; }
+    .hero p { font-size: 0.85rem; margin-bottom: 0.8rem; }
 
     /* Search box: small spacing but keep desktop behaviour (stacking handled elsewhere if needed) */
-    .search-box { max-width: 520px; margin: 0.2rem auto 0.8rem auto; padding: 0 0.4rem; box-sizing: border-box; }
-    .search-box input[type="text"], .search-box button { border-radius: 12px; }
+    .search-box { max-width: 320px; margin: 0.2rem auto 0.6rem auto; padding: 0 0.4rem; box-sizing: border-box; gap: 0.4rem; }
+    .search-box input[type="text"] { font-size: 0.85rem; padding: 0.6em 0.9em; border-radius: 12px; }
+    .search-box button { font-size: 0.85rem; padding: 0.6em 1.2em; border-radius: 12px; }
 
     /* Features: make cards a bit smaller and centered; keep text centered */
-    .features { gap: 1rem; margin: 1rem auto; padding: 0 0.6rem; }
+    .features { 
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1.2rem; 
+        margin: 1rem auto; 
+        padding: 0 0.35rem; 
+        max-width: 300px;
+        align-items: stretch;
+    }
     .feature-card {
-        max-width: 260px; /* reduced size for tighter mobile layout */
+        max-width: unset;
         width: 100%;
         min-width: unset;
-        padding: 0.9rem 0.9rem;
-        margin: 0.5rem auto;
+        min-height: 150px;
+        height: 70%;
+        padding: 0.45rem 0.45rem;
+        margin: 0;
         text-align: center; /* keep text centered */
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
     }
-    .feature-card h3 { font-size: 1.8rem; margin-bottom: 0.45rem; }
-    .feature-card p { font-size: 1.5rem; line-height: 1.55; }
+    .feature-card h3 { font-size: 0.75rem; margin-bottom: 0.25rem; }
+    .feature-card p { font-size: 0.65rem; line-height: 1.3; }
 
     /* Increase general readable typography on mobile (excluding search input) */
-    nav a { font-size: 1.14rem; }
-    .how-it-works ol { font-size: 1.5rem; }
-    .how-it-works li { margin-bottom: 0.9rem; }
-    p { font-size: 1.5rem; }
-    footer { font-size: 1rem; }
+    nav a { font-size: 0.9rem; }
+    .how-it-works ol { font-size: 0.85rem; }
+    .how-it-works li { margin-bottom: 0.7rem; }
+    p { font-size: 0.85rem; }
+    footer { font-size: 0.8rem; }
 
     /* How it works compact */
-    .how-it-works { padding: 1rem 0.8rem; border-radius: 12px; }
-    .how-it-works h2 { font-size: 1.8rem; }
+    .how-it-works { padding: 0.9rem 0.7rem; border-radius: 12px; }
+    .how-it-works h2 { font-size: 1.1rem; }
 
     /* Footer compact */
     footer { font-size: 0.95rem; padding: 1rem 0.6rem 0.8rem 0.6rem; }

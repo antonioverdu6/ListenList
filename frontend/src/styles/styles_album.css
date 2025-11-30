@@ -455,3 +455,136 @@ body {
     transform: scale(1.18) rotate(-3deg);
     transition: color 0.25s, font-size 0.25s, text-shadow 0.25s, transform 0.25s;
 }
+
+@media (max-width: 600px) {
+    .detalle-album-page {
+        padding: 0.85rem 0.55rem;
+    }
+
+    .album-columns {
+        gap: 0.6rem;
+    }
+
+    .album-detalle h1 {
+        font-size: 1.85rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .album-detalle h2 {
+        font-size: 1.2rem;
+        margin-bottom: 0.6rem;
+    }
+
+    .album-detalle h3 {
+        font-size: 1.05rem;
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .album-info {
+        width: 100%;
+        align-items: center;
+    }
+
+    .album-info img {
+        max-width: 180px;
+        margin-bottom: 0.8rem;
+    }
+
+    .album-info p,
+    .album-detalle p {
+        font-size: 0.92rem;
+        margin-bottom: 0.4rem;
+    }
+
+    .info-cancion {
+        width: 92%;
+        padding: 0.75rem 0.6rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+        font-size: 0.9rem;
+    }
+
+    .info-cancion p {
+        font-size: 0.85rem;
+        margin: 0.2rem 0;
+    }
+
+    .info-cancion .album { font-size: 1.15rem; }
+    .info-cancion .duracion { font-size: 1rem; }
+    .info-cancion .fecha { font-size: 0.95rem; }
+
+    .valoracion-box {
+        flex-direction: column;
+        gap: 0.35rem;
+        align-items: flex-start;
+    }
+
+    .estrellas label {
+        font-size: 1.5rem;
+    }
+
+    .album-songs {
+        padding: 1rem 0.9rem;
+        border-radius: 16px;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+    }
+
+    .album-songs h3 {
+        font-size: 1.35rem;
+        margin-left: 0.4rem;
+    }
+
+    .album-songs li {
+        flex-wrap: wrap;
+        gap: 0.2rem;
+    }
+
+    .album-songs li a {
+        font-size: 0.95rem;
+        padding: 0.12em 0.55em;
+    }
+
+    .album-songs li span,
+    .album-songs li .nota-media {
+        font-size: 0.82rem;
+        min-width: auto;
+    }
+
+    .album-songs li .duracion {
+        font-size: 0.78rem;
+    }
+
+    .comentarios-section h3 {
+        font-size: 1.15rem;
+        margin-top: 1rem;
+    }
+
+    .btn-nuevo-comentario {
+        font-size: 0.9rem;
+        padding: 0.55rem 1rem;
+    }
+
+    .form-nuevo-comentario textarea,
+    .form-respuesta textarea {
+        font-size: 0.85rem;
+        padding: 0.55rem;
+    }
+
+    .comentario,
+    .respuesta {
+        padding: 0.75rem 0.8rem;
+        font-size: 0.85rem;
+    }
+
+    .comentario p,
+    .respuesta p {
+        font-size: 0.82rem;
+    }
+
+    .responder,
+    .comentario-botones button {
+        font-size: 0.78rem;
+        padding: 0.35rem 0.7rem;
+    }
+}

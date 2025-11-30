@@ -200,11 +200,17 @@ body {
     .search-form {
         flex-direction: column;
         gap: 0.8rem;
+        align-items: center;
     }
-    .search-input,
-    .search-button {
-        width: 100%;
+    .search-input {
+        width: 85%;
+        max-width: 260px;
         min-width: unset;
+    }
+    .search-button {
+        width: 40%;
+        min-width: 100px;
+        padding: 0.55rem 0.9rem;
     }
 }
 
@@ -377,25 +383,23 @@ a.search-button:focus {
 
 /* --- Botones de categoría: versión limpia, fluida y moderna --- */
 .category-buttons {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-  max-width: 1200px;
-  margin: -0.4rem auto 1.6rem;
-  padding: 0 1rem;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.45rem;
+    max-width: 640px;
+    margin: -0.4rem auto 1.6rem;
+    padding: 0 0.5rem;
 }
 
 .category-buttons button {
   appearance: none;
   -webkit-tap-highlight-color: transparent;
-  padding: 0.65rem 1.1rem;
+    padding: 0.5rem 0.4rem;
   border-radius: 999px;
   border: 1.5px solid rgba(29, 185, 84, 0.18);
   background: linear-gradient(180deg, #2a2d2f 0%, #212425 100%);
   color: #f3f4f5;
-  font-size: 0.96rem;
+    font-size: 0.82rem;
   font-weight: 500;
   letter-spacing: 0.2px;
   cursor: pointer;
@@ -440,18 +444,9 @@ a.search-button:focus {
 
 @media (max-width: 700px) {
     .category-buttons {
-        gap: 0.5rem;
-        margin: 0.2rem auto 1.2rem;
-        padding: 0 0.7rem;
-    }
-    .category-buttons button {
-        flex: 1 1 calc(50% - 0.5rem);
-        text-align: center;
-    }
-}
-
-@media (max-width: 420px) {
-    .category-buttons button {
-        flex: 1 1 100%;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.35rem;
+        margin: 0.2rem auto 1rem;
+        padding: 0 0.4rem;
     }
 }
