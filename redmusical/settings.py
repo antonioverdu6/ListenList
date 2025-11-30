@@ -144,7 +144,7 @@ CHANNEL_LAYERS = {
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-# Usar PostgreSQL en producción, SQLite en desarrollo
+# Usar PostgreSQL si DATABASE_URL está configurada, sino SQLite
 if os.environ.get('DATABASE_URL'):
     DATABASES = {
         'default': dj_database_url.config(
@@ -154,10 +154,12 @@ if os.environ.get('DATABASE_URL'):
         )
     }
 else:
+    # SQLite configuration para desarrollo y producción
+    db_path = os.environ.get('SQLITE_PATH', str(BASE_DIR / 'db.sqlite3'))
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'NAME': db_path,
         }
     }
 

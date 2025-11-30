@@ -41,14 +41,14 @@ def check_config():
     # Verificar FRONTEND_URL
     frontend_url = os.environ.get('FRONTEND_URL')
     if not frontend_url:
-        warnings.append("⚠️  FRONTEND_URL no configurada")
+        print("ℹ️  FRONTEND_URL no configurada (se configurará en Render)")
     else:
         print(f"✅ FRONTEND_URL: {frontend_url}")
     
     # Verificar RENDER_EXTERNAL_HOSTNAME
     render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
     if not render_host:
-        warnings.append("⚠️  RENDER_EXTERNAL_HOSTNAME no configurada")
+        print("ℹ️  RENDER_EXTERNAL_HOSTNAME no configurada (se configurará en Render)")
     else:
         print(f"✅ RENDER_EXTERNAL_HOSTNAME: {render_host}")
     

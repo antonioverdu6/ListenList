@@ -6,3 +6,6 @@ pip install -r requirements.txt
 
 python manage.py collectstatic --no-input
 python manage.py migrate
+
+# Crear directorio para SQLite si no existe
+mkdir -p /opt/render/project/src
