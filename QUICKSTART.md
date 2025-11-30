@@ -29,14 +29,14 @@ git push origin master
 
 ### 4. Variables de Entorno en Render
 ```
-SECRET_KEY=<genera-con: python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'>
+SECRET_KEY=x__=_h3ct^+n#g8t_7^183$!9pjm6yuq*m2+vb+)cc)z&8n_gs
 DEBUG=False
-DATABASE_URL=<pega-postgres-url>
-FRONTEND_URL=https://tu-app.netlify.app
-RENDER_EXTERNAL_HOSTNAME=<tu-app>.onrender.com
-SPOTIPY_CLIENT_ID=<tu-client-id>
-SPOTIPY_CLIENT_SECRET=<tu-client-secret>
+SQLITE_PATH=/opt/render/project/src/db.sqlite3
+FRONTEND_URL=https://wastedwave.netlify.app
+RENDER_EXTERNAL_HOSTNAME=wastedwave.onrender.com
 ```
+
+**Nota:** Las credenciales de Spotify ya están en el código, no necesitas configurarlas aquí.
 
 ### 5. Deploy
 Click **Manual Deploy** → Espera 5-10 minutos
@@ -64,7 +64,7 @@ echo "REACT_APP_API_URL=http://localhost:8000" > .env
 ### 3. Variables de Entorno en Netlify
 En Site settings → Environment variables:
 ```
-REACT_APP_API_URL=https://tu-app.onrender.com
+REACT_APP_API_URL=https://wastedwave.onrender.com
 ```
 
 ### 4. Redeploy
