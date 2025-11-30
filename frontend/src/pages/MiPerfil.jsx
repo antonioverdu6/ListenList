@@ -119,7 +119,7 @@ function MiPerfil() {
         } catch {}
         // If body wasn't JSON (or no picks), trigger a GET as fallback
         try {
-          const rp = await fetch(`http://127.0.0.1:8000/musica/api/picks/${username}/`, { headers: { Authorization: `Bearer ${token}` } });
+          const rp = await fetch(`${API_URL}/musica/api/picks/${username}/`, { headers: { Authorization: `Bearer ${token}` } });
           if (rp.ok) {
             const pd = await rp.json();
             const picks = Array.isArray(pd.picks) ? pd.picks.slice(0,3) : [null,null,null];
@@ -185,7 +185,7 @@ function MiPerfil() {
             } catch {}
           }
           const headers = token ? { Authorization: `Bearer ${token}` } : {};
-          const rp = await fetch(`http://127.0.0.1:8000/musica/api/picks/${username}/`, { headers });
+          const rp = await fetch(`${API_URL}/musica/api/picks/${username}/`, { headers });
           if (rp.status === 401 || rp.status === 403) {
             // Do not overwrite local state on auth failure; just skip
             console.debug('GET picks no autorizado; manteniendo estado local.');
@@ -248,7 +248,7 @@ function MiPerfil() {
       const currentUser = tokenInfo ? tokenInfo.username : localStorage.getItem('username');
 
       // Contadores
-      const resCont = await fetch(`http://127.0.0.1:8000/musica/api/seguidores_y_siguiendo/${username}/`);
+      const resCont = await fetch(`${API_URL}/musica/api/seguidores_y_siguiendo/${username}/`);
       if (resCont.ok) {
         const dataCont = await resCont.json();
         setContador(dataCont);
@@ -256,7 +256,7 @@ function MiPerfil() {
 
       // Estado de seguimiento
       if (token && currentUser && currentUser !== username) {
-        const resSeg = await fetch(`http://127.0.0.1:8000/musica/api/comprobar_seguimiento/${username}/`, {
+        const resSeg = await fetch(`${API_URL}/musica/api/comprobar_seguimiento/${username}/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (resSeg.ok) {
@@ -282,7 +282,7 @@ function MiPerfil() {
     let mounted = true;
     const fetchSeguidos = async () => {
       try {
-        const res = await fetch(`http://127.0.0.1:8000/musica/api/artistas_seguidos/${username}/`);
+        const res = await fetch(`${API_URL}/musica/api/artistas_seguidos/${username}/`);
         if (!res.ok) return;
         const data = await res.json();
         if (mounted) setArtistasSeguidos(data || []);
@@ -314,7 +314,7 @@ function MiPerfil() {
       const token = localStorage.getItem('access');
       if (!token) return;
       try {
-        const res = await fetch('http://127.0.0.1:8000/musica/api/notificaciones/', {
+        const res = await fetch(`${API_URL}/musica/api/notificaciones/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) return;
@@ -400,7 +400,7 @@ function MiPerfil() {
     if (currentUser === username) return;
 
     try {
-      const res = await fetch(`http://127.0.0.1:8000/musica/api/toggle_seguir/${username}/`, {
+      const res = await fetch(`${API_URL}/musica/api/toggle_seguir/${username}/`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${tokenInfo.token}` },
       });
@@ -505,7 +505,7 @@ function MiPerfil() {
         payload.append("remove_avatar", "1");
       }
 
-      const response = await fetch(`http://127.0.0.1:8000/musica/api/usuarios/${username}/`, {
+      const response = await fetch(`${API_URL}/musica/api/usuarios/${username}/`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -726,7 +726,7 @@ function MiPerfil() {
     try {
       const tokenInfo = await ensureToken();
       const headers = tokenInfo ? { Authorization: `Bearer ${tokenInfo.token}` } : {};
-      const res = await fetch(`http://127.0.0.1:8000/musica/api/seguidores/${username}/`, { headers });
+      const res = await fetch(`${API_URL}/musica/api/seguidores/${username}/`, { headers });
       if (!res.ok) throw new Error('Error fetching followers');
       const data = await res.json();
       setFollowersList(data || []);
@@ -740,7 +740,7 @@ function MiPerfil() {
     try {
       const tokenInfo = await ensureToken();
       const headers = tokenInfo ? { Authorization: `Bearer ${tokenInfo.token}` } : {};
-      const res = await fetch(`http://127.0.0.1:8000/musica/api/siguiendo/${username}/`, { headers });
+      const res = await fetch(`${API_URL}/musica/api/siguiendo/${username}/`, { headers });
       if (!res.ok) throw new Error('Error fetching following');
       const data = await res.json();
       setFollowingList(data || []);
@@ -755,7 +755,7 @@ function MiPerfil() {
     const tokenInfo = await ensureToken();
     if (!tokenInfo) return alert('Debes iniciar sesión para seguir a alguien.');
     try {
-      const res = await fetch(`http://127.0.0.1:8000/musica/api/toggle_seguir/${targetUsername}/`, {
+      const res = await fetch(`${API_URL}/musica/api/toggle_seguir/${targetUsername}/`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${tokenInfo.token}` },
       });
