@@ -828,7 +828,7 @@ function Mensajes() {
               <path d="M15 17H9a3 3 0 0 1-3-3V9a6 6 0 1 1 12 0v5a3 3 0 0 1-3 3z" />
               <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
-            {unreadNotifications > 0 && <span className="header-badge">{unreadNotifications}</span>}
+            {/* {unreadNotifications > 0 && <span className="header-badge">{unreadNotifications}</span>} */}
           </button>
         </div>
         <Link to="/" className="logo">ListenList <span>beta</span></Link>
