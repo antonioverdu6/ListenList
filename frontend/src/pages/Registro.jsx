@@ -121,6 +121,13 @@ function RegistroForm() {
 // Componente envolvente con reCAPTCHA
 function Registro() {
   const siteKey = process.env.REACT_APP_RECAPTCHA_KEY;
+  if (!siteKey) {
+    // Diagnóstico para despliegue: si no hay key, informar en consola claramente
+    // En Netlify, define REACT_APP_RECAPTCHA_KEY en Environment variables y rehace el build.
+    // En local, crea frontend/.env con REACT_APP_RECAPTCHA_KEY=...
+    // eslint-disable-next-line no-console
+    console.warn('[reCAPTCHA] REACT_APP_RECAPTCHA_KEY is missing. Provider will render without key.');
+  }
   return (
     <GoogleReCaptchaProvider
       reCaptchaKey={siteKey}
@@ -130,6 +137,8 @@ function Registro() {
         appendTo: "head",
         nonce: undefined,
       }}
+      useRecaptchaNet
+      language="es"
     >
       <RegistroForm />
     </GoogleReCaptchaProvider>
