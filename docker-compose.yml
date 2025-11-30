@@ -18,3 +18,12 @@ services:
       - REDIS_PORT=6379
     depends_on:
       - redis
+
+  spotify-worker:
+    build: .
+    command: python manage.py process_spotify_queue --loop --sleep 30 --limit 5
+    depends_on:
+      - web
+      - redis
+    environment:
+      - DJANGO_SETTINGS_MODULE=redmusical.settings

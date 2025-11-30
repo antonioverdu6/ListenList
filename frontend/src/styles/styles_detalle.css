@@ -584,7 +584,24 @@ input[type="hidden"] {
 .header-bell svg { width:26px; height:26px; stroke:currentColor; fill:none; stroke-width:1.8 }
 .header-bell:hover { background: transparent; color: #fff; transform: none }
 .header-bell:focus, .header-bell:active { box-shadow: none !important; outline: none !important; }
-.header-badge { display:none }
+.header-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.2rem;
+    height: 1.2rem;
+    padding: 0 0.35rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    line-height: 1;
+    margin-left: 0.35rem;
+    color: #fff;
+    background: #1db954;
+}
+.header-badge--alert {
+    background: #d7263d;
+}
 
 .letra-cancion::-webkit-scrollbar {
     width: 8px; /* un poco más ancho para mejor usabilidad */

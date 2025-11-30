@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.db import models
 
 # Create your models here
@@ -5,6 +7,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models import Avg
 from django.utils.timezone import now
+from django.utils import timezone
 
 
 class Genero(models.Model):
@@ -165,7 +168,7 @@ class ValoracionArtista(Valoracion):
 
 class Perfil(models.Model):
     usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil')
-    fotoPerfil = models.CharField(max_length=500, blank=True, null=True)
+    fotoPerfil = models.ImageField(upload_to="avatars/", blank=True, null=True)
     banner = models.URLField(blank=True, null=True)
     biografia = models.TextField(blank=True, null=True)
     # Persist user "Your Picks" as a small JSON blob
@@ -228,6 +231,7 @@ class Notificacion(models.Model):
         ("comment", "Comment"),
         ("reply", "Reply"),
         ("artist", "Artist Activity"),
+        ("message", "Message"),
         ("system", "System"),
     ]
 
@@ -248,3 +252,47 @@ class Notificacion(models.Model):
 
     def __str__(self):
         return f"Notificacion(to={self.destinatario.username}, tipo={self.tipo}, leido={self.leido})"
+
+
+class SpotifyTrackFetch(models.Model):
+    STATUS_PENDING = "pending"
+    STATUS_SUCCESS = "success"
+    STATUS_ERROR = "error"
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending"),
+        (STATUS_SUCCESS, "Success"),
+        (STATUS_ERROR, "Error"),
+    ]
+
+    spotify_id = models.CharField(max_length=100, unique=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    attempts = models.PositiveIntegerField(default=0)
+    last_error = models.TextField(blank=True)
+    next_retry_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+
+    def schedule_retry(self, seconds, error_message=""):
+        self.next_retry_at = timezone.now() + timedelta(seconds=seconds)
+        self.status = self.STATUS_PENDING
+        self.attempts = self.attempts + 1
+        self.last_error = error_message or self.last_error
+        self.save(update_fields=["next_retry_at", "status", "attempts", "updated_at", "last_error"])
+
+    def mark_success(self):
+        self.status = self.STATUS_SUCCESS
+        self.last_error = ""
+        self.next_retry_at = None
+        self.save(update_fields=["status", "last_error", "next_retry_at", "updated_at"])
+
+    def seconds_until_retry(self):
+        if not self.next_retry_at:
+            return 0
+        delta = self.next_retry_at - timezone.now()
+        return max(0, int(delta.total_seconds()))
+
+    def is_due(self):
+        return not self.next_retry_at or self.next_retry_at <= timezone.now()

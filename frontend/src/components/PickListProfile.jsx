@@ -1,13 +1,21 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 
+const API_URL_SONGS = 'http://127.0.0.1:8000/musica/buscar_api/';
+const API_URL_ALBUMS = 'http://127.0.0.1:8000/musica/api/albums_buscar/';
+const API_URL_ARTISTS = 'http://127.0.0.1:8000/musica/api/artistas_buscar/';
+
+const endpointMap = {
+  songs: (qq) => `${API_URL_SONGS}?q=${encodeURIComponent(qq)}`,
+  albums: (qq) => `${API_URL_ALBUMS}?q=${encodeURIComponent(qq)}`,
+  artists: (qq) => `${API_URL_ARTISTS}?q=${encodeURIComponent(qq)}`,
+};
+
 // PickListProfile
 // - 3 clickable slots
 // - clicking a slot opens an accessible popover with search + tabs + results
 // - selecting an item fills the slot and closes the popover
-// - mock data provided for songs, albums, artists
-// Note: uses Tailwind-like class names for modern styling; if Tailwind is not configured
-// they will act as normal class names (you can adapt to your CSS setup).
+// Results are fetched from the Django API so the component can be embedded elsewhere.
 
 export default function PickListProfile({ initial = [null, null, null] }) {
   const [pickedItems, setPickedItems] = useState(() => initial.slice(0, 3));
@@ -16,23 +24,13 @@ export default function PickListProfile({ initial = [null, null, null] }) {
   const [activeFilter, setActiveFilter] = useState('songs');
   const popoverRef = useRef(null);
 
-  // Mock data
-  const songs = useMemo(() => [
-    { id: 's1', name: 'Blinding Lights', artist: 'The Weeknd', imageUrl: 'https://i.scdn.co/image/ab67616d0000b273e4a1a9d1f6f0a7d7b6c4b5e2', type: 'song' },
-    { id: 's2', name: 'Save Your Tears', artist: 'The Weeknd', imageUrl: 'https://i.scdn.co/image/ab67616d0000b273b1b2a3c4d5e6f7a8b9c0d1e2', type: 'song' },
-    { id: 's3', name: 'As It Was', artist: 'Harry Styles', imageUrl: 'https://i.scdn.co/image/ab67616d0000b273c3d4e5f6a7b8c9d0e1f2a3b4', type: 'song' },
-    { id: 's4', name: 'Die For You', artist: 'The Weeknd', imageUrl: 'https://i.scdn.co/image/ab67616d0000b273d4e5f67890abcdef12345678', type: 'song' },
-  ], []);
+  const [fetchVersion, setFetchVersion] = useState(0);
 
-  const albums = useMemo(() => [
-    { id: 'a1', name: 'After Hours', artist: 'The Weeknd', imageUrl: 'https://i.scdn.co/image/ab67616d0000b273aaaabbbbccccddddeeefff111', type: 'album' },
-    { id: 'a2', name: 'Fine Line', artist: 'Harry Styles', imageUrl: 'https://i.scdn.co/image/ab67616d0000b273111222333444555666777888', type: 'album' },
-  ], []);
-
-  const artists = useMemo(() => [
-    { id: 'ar1', name: 'The Weeknd', artist: '', imageUrl: 'https://i.scdn.co/image/ab6761610000e5eb1234567890abcdef12345678', type: 'artist' },
-    { id: 'ar2', name: 'Harry Styles', artist: '', imageUrl: 'https://i.scdn.co/image/ab6761610000e5ebabcdef0123456789abcdef01', type: 'artist' },
-  ], []);
+  const [songs, setSongs] = useState([]);
+  const [albums, setAlbums] = useState([]);
+  const [artists, setArtists] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const allByFilter = useMemo(() => ({ songs, albums, artists }), [songs, albums, artists]);
 
@@ -42,6 +40,114 @@ export default function PickListProfile({ initial = [null, null, null] }) {
     if (!q) return list;
     return list.filter(item => (item.name || '').toLowerCase().includes(q) || (item.artist || '').toLowerCase().includes(q));
   }, [activeFilter, searchTerm, allByFilter]);
+
+  useEffect(() => {
+    if (openSlot === null) return undefined;
+    const controller = new AbortController();
+    let isMounted = true;
+    const q = (searchTerm || '').trim();
+    const qToUse = q || 'a';
+    const filterSnapshot = activeFilter;
+    const url = (endpointMap[filterSnapshot] || endpointMap.songs)(qToUse);
+
+    async function fetchResults() {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(url, {
+          method: 'GET',
+          signal: controller.signal,
+          credentials: 'include',
+          headers: { Accept: 'application/json' },
+        });
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const contentType = res.headers.get('content-type') || '';
+        return list.filter(item => (item.name || '').toLowerCase().includes(q) || (item.artist || '').toLowerCase().includes(q));
+        const data = await res.json();
+        if (!isMounted) return;
+        const rawItems = Array.isArray(data) ? data : (Array.isArray(data.results) ? data.results : []);
+        const norm = rawItems.map((it) => {
+          if (!it) return null;
+          if (filterSnapshot === 'songs') {
+            return {
+              id: it.spotify_id || it.id || it.spotifyId,
+              type: 'song',
+              name: it.nombre || it.name || it.titulo,
+              artist:
+                it.artista ||
+                (it.album && it.album.artista) ||
+                it.artist ||
+                (it.album && it.album.artista && (it.album.artista.nombre || it.album.artista.name)) ||
+                null,
+              imageUrl:
+                it.imagen ||
+                it.imagen_url ||
+                it.image_url ||
+                it.imageUrl ||
+                (it.album && (it.album.imagen_url || it.album.image_url || it.album.imageUrl)) ||
+                (Array.isArray(it.images) && it.images[0] && it.images[0].url) ||
+                (it.album && Array.isArray(it.album.images) && it.album.images[0] && it.album.images[0].url) ||
+                null,
+            };
+          }
+          if (filterSnapshot === 'albums') {
+            return {
+              id: it.spotify_id || it.id,
+              type: 'album',
+              name: it.titulo || it.nombre || it.name,
+              artist: (it.artista && (it.artista.nombre || it.artista.name)) || it.artist || null,
+              imageUrl:
+                it.imagen ||
+                it.imagen_url ||
+                it.image_url ||
+                it.imageUrl ||
+                (Array.isArray(it.images) && it.images[0] && it.images[0].url) ||
+                null,
+            };
+          }
+          if (filterSnapshot === 'artists') {
+            return {
+              id: it.id,
+              type: 'artist',
+              name: it.nombre || it.name,
+              artist: null,
+              imageUrl:
+                it.imagen ||
+                it.imagen_url ||
+                it.image_url ||
+                it.imageUrl ||
+                (Array.isArray(it.images) && it.images[0] && it.images[0].url) ||
+                null,
+            };
+          }
+          return null;
+        }).filter(Boolean);
+
+        if (!isMounted) return;
+        if (filterSnapshot === 'songs') setSongs(norm);
+        else if (filterSnapshot === 'albums') setAlbums(norm);
+        else if (filterSnapshot === 'artists') setArtists(norm);
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+        if (!isMounted) return;
+        setError(err.message || 'Error cargando resultados');
+        if (filterSnapshot === 'songs') setSongs([]);
+        else if (filterSnapshot === 'albums') setAlbums([]);
+        else if (filterSnapshot === 'artists') setArtists([]);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    fetchResults();
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [openSlot, searchTerm, activeFilter, fetchVersion]);
+
+  const retryFetch = () => setFetchVersion((prev) => prev + 1);
 
   // Close popover on ESC or click outside
   useEffect(() => {
@@ -148,8 +254,23 @@ export default function PickListProfile({ initial = [null, null, null] }) {
               </div>
 
               <div className="mt-4 max-h-64 overflow-auto">
-                {filteredResults.length === 0 ? (
-                  <div className="text-gray-400 p-4">No hay resultados.</div>
+                {loading ? (
+                  <div className="text-gray-400 p-4">Cargando resultados...</div>
+                ) : error ? (
+                  <div className="text-red-400 p-4 space-y-2">
+                    <div>Error cargando resultados: {error}</div>
+                    <button
+                      type="button"
+                      className="px-3 py-1 rounded bg-green-600 text-white"
+                      onClick={retryFetch}
+                    >
+                      Reintentar
+                    </button>
+                  </div>
+                ) : filteredResults.length === 0 ? (
+                  <div className="text-gray-400 p-4">
+                    {(searchTerm || '').trim() ? 'No hay resultados.' : 'Escribe algo para buscar canciones...'}
+                  </div>
                 ) : (
                   <ul className="space-y-2">
                     {filteredResults.map(r => (
@@ -159,7 +280,11 @@ export default function PickListProfile({ initial = [null, null, null] }) {
                           className="w-full flex items-center gap-3 p-2 rounded hover:bg-gray-800"
                           onClick={() => selectItem({ id: r.id, name: r.name, artist: r.artist, imageUrl: r.imageUrl, type: r.type })}
                         >
-                          <img src={r.imageUrl} alt="thumb" className="w-12 h-12 rounded object-cover" />
+                          <img
+                            src={r.imageUrl || r.image_url || '/default-cover.png'}
+                            alt="thumb"
+                            className="w-12 h-12 rounded object-cover"
+                          />
                           <div className="text-left">
                             <div className="font-semibold text-white">{r.name}</div>
                             {r.artist && <div className="text-sm text-gray-300">{r.artist}</div>}

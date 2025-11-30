@@ -44,6 +44,12 @@
   position: relative;
 }
 
+.perfil-avatar-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .perfil-avatar {
   width: 96px;
   height: 96px;
@@ -53,6 +59,14 @@
   object-fit: cover;
   background: #111;
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.perfil-avatar-fallback {
+  font-size: 2.4rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  background: linear-gradient(135deg, #242729, #2f3336);
+  color: #f5f6fa;
+  text-transform: uppercase;
 }
 .perfil-avatar:hover {
   transform: translateY(-2px);
@@ -120,6 +134,55 @@
   background: #303436;
 }
 
+.avatar-edit-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.avatar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.avatar-upload-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  border: 1px dashed var(--borde);
+  background: var(--bg-700);
+  color: var(--texto);
+  cursor: pointer;
+  font-weight: 600;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.avatar-upload-label:hover {
+  border-color: var(--verde);
+  background: rgba(29,185,84,0.12);
+}
+
+.avatar-file-input {
+  display: none;
+}
+
+.avatar-remove-btn {
+  background: transparent;
+  color: #ff8a80;
+  border: 1px solid rgba(255,138,128,0.45);
+  box-shadow: none;
+}
+
+.avatar-remove-btn:hover {
+  background: rgba(255,138,128,0.12);
+  border-color: #ff8a80;
+}
+
 /* Botones */
 .perfil-info button {
   appearance: none;
@@ -175,6 +238,10 @@
   .perfil-avatar {
     width: 84px;
     height: 84px;
+  }
+  .avatar-edit-controls {
+    flex-direction: column;
+    align-items: flex-start;
   }
   .perfil-info .perfil-nombre {
     font-size: 1.6rem;

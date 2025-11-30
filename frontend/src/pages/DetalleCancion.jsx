@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback} from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import "../styles/styles_detalle.css";
 import { refreshAccessToken } from "../utils/auth";
 import { useParams, Link, useNavigate } from "react-router-dom";
@@ -29,12 +29,41 @@ function DetalleCancion() {
   const [error, setError] = useState(null);
   const [comentarioEditando, setComentarioEditando] = useState(null);
   const [textoEditando, setTextoEditando] = useState("");
+  const retryTimeoutRef = useRef(null);
+
+  const clearRetryTimer = useCallback(() => {
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
+  }, []);
   
   const fetchCancion = useCallback(async () => {
     try {
       // Pedimos la canción usando spotifyId
       const response = await fetch(`http://127.0.0.1:8000/musica/cancion/${spotifyId}/`);
+      if (response.status === 202) {
+        const payload = await response.json().catch(() => ({}));
+        const waitSeconds = payload.retryInSeconds ?? 30;
+        clearRetryTimer();
+        setCancion(null);
+        setError(payload.message || "Estamos importando la canción desde Spotify. Vuelve a intentarlo en unos segundos.");
+        retryTimeoutRef.current = setTimeout(() => {
+          retryTimeoutRef.current = null;
+          fetchCancion();
+        }, Math.max(waitSeconds, 5) * 1000);
+        return;
+      }
+      if (!response.ok) {
+        const text = await response.text();
+        const friendlyMessage = response.status === 503
+          ? "Spotify está limitando las peticiones ahora mismo. Prueba de nuevo en unos segundos."
+          : `Error al cargar la canción (HTTP ${response.status})`;
+        throw new Error(text || friendlyMessage);
+      }
+
       const data = await response.json();
+      clearRetryTimer();
 
       setCancion(data);
       setAvgRating(data.avgRating ?? 0);
@@ -48,14 +77,13 @@ function DetalleCancion() {
       setCancionesRecomendadas(data.cancionesRecomendadas ?? []);
       setLetra(data.letra ?? "");
       setError(null);
-      console.log("Spotify ID del álbum:", data.album.spotify_id);
-
     } catch (err) {
       console.error(err);
+      clearRetryTimer();
       setError(err.message);
       setCancion(null);
     }
-  }, [spotifyId]);
+  }, [spotifyId, clearRetryTimer]);
 
 
 
@@ -123,8 +151,11 @@ function DetalleCancion() {
   useEffect(() => {
     fetchCancion();
     const interval = setInterval(fetchRating, 10000);
-    return () => clearInterval(interval);
-  }, [fetchCancion, fetchRating]);
+    return () => {
+      clearInterval(interval);
+      clearRetryTimer();
+    };
+  }, [fetchCancion, fetchRating, clearRetryTimer]);
 
   useEffect(() => {
     async function fetchUnread() {

@@ -7,7 +7,6 @@ app_name = 'musica'
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
-    path('artistas/', views.lista_artistas, name='lista_artistas'),
     path('inicio/', views.inicio, name='inicio'),
     path('buscar/', views.buscar, name='buscar'),
     path('cancion/<str:spotify_id>/', views.detalle_cancion, name='detalle_cancion'),
@@ -17,7 +16,7 @@ urlpatterns = [
     path('artista/<str:spotify_id>/valorar/', views.valorar_artista, name='valorar_artista'),
     path('album/<str:spotify_id>/', views.detalle_album, name='detalle_album'),
     path('hello/', views.hello_world),
-    path('artistas/', views.ArtistaList.as_view()),
+    path('api/artistas/', views.ArtistaList.as_view(), name="artistas-api"),
     path('albums/', views.AlbumList.as_view()),
     path('canciones/', views.CancionList.as_view()),
     path('listas/', views.ListaMusicalList.as_view()),
@@ -37,7 +36,6 @@ urlpatterns = [
     path("api/comentario_artista/<int:comentario_id>/borrar/", views.borrar_comentario_artista, name="borrar_comentario_artista"),
     path("api/comentario_artista/<int:comentario_id>/editar/", views.editar_comentario_artista, name="editar_comentario_artista"),
     path("api/usuarios/<str:username>/", views.PerfilDetailAPI.as_view(), name="perfil-detail"),
-    path("api/artistas/", views.ArtistaList.as_view(), name="artistas-api"),
     path("api/artista/<int:id>/", views.ArtistaDetailAPI.as_view(), name="artista-detail-api"),
     path("api/toggle_seguir/<str:username>/", views.toggle_seguir_usuario, name="toggle_seguir_usuario"),
     path("api/comprobar_seguimiento/<str:username>/", views.comprobar_seguimiento, name="comprobar_seguimiento"),

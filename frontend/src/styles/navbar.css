@@ -1,0 +1,29 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  color: #fff;
+  background: #1db954;
+}
+
+.badge--alert {
+  background: #d7263d;
+}
+
+.badge--compact {
+  min-width: 1.2rem;
+  height: 1.2rem;
+  padding: 0 0.35rem;
+  font-size: 0.68rem;
+}
+
+.header-badge--alert {
+  background: #d7263d;
+}

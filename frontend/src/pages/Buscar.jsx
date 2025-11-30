@@ -253,10 +253,16 @@ function Buscar() {
             <div className="song-tile" key={user.username}>
               <Link to={`/perfil/${user.username}`} className="song-link">
                 <div className="song-cover">
-                  <img
-                    src={user.fotoPerfil || "/default-avatar.png"}
-                    alt={user.username}
-                  />
+                  {user.fotoPerfil ? (
+                    <img
+                      src={user.fotoPerfil}
+                      alt={user.username}
+                    />
+                  ) : (
+                    <div className="user-avatar-fallback" aria-hidden="true">
+                      {(user.username || "?").charAt(0).toUpperCase()}
+                    </div>
+                  )}
                 </div>
                 <div className="song-info">
                   <h2 className="song-title">{user.username}</h2>

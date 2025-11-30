@@ -14,6 +14,41 @@ import { refreshAccessToken } from "../utils/auth";
 
 const API_BASE = "http://127.0.0.1:8000/api/mensajes";
 const WS_URL = "ws://localhost:8000/ws/mensajes/";
+const API_ORIGIN = new URL(API_BASE).origin;
+
+function normalizeAvatarUrl(rawUrl) {
+  if (!rawUrl) return null;
+  const trimmed = String(rawUrl).trim();
+  if (!trimmed) return null;
+  if (/^https?:\/[a-z0-9]/i.test(trimmed)) {
+    const fixed = trimmed.replace(/^https?:\//i, (match) => `${match}/`);
+    return fixed;
+  }
+  if (/^(https?:)?\/\//i.test(trimmed) || trimmed.startsWith("data:") || trimmed.startsWith("blob:")) {
+    if (trimmed.startsWith("//")) {
+      return `https:${trimmed}`;
+    }
+    return trimmed;
+  }
+  const normalizedPath = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  return `${API_ORIGIN}${normalizedPath}`;
+}
+
+function normalizeProfile(profile) {
+  if (!profile) return null;
+  const username = profile.username ?? profile.usuario?.username ?? profile.user?.username ?? null;
+  const firstName = profile.first_name ?? profile.usuario?.first_name ?? null;
+  const lastName = profile.last_name ?? profile.usuario?.last_name ?? null;
+  const userId = profile.userId ?? profile.id ?? profile.usuario?.id ?? null;
+  const rawAvatar = profile.fotoPerfil ?? profile.avatar ?? profile.avatarUrl ?? null;
+  return {
+    userId,
+    username,
+    first_name: firstName,
+    last_name: lastName,
+    fotoPerfil: normalizeAvatarUrl(rawAvatar),
+  };
+}
 
 function parseTokenPayload(token) {
   try {
@@ -86,13 +121,20 @@ function hydrateThreads(shares, currentUserId) {
     const message = buildMessageFromShare(share, currentUserId);
     const partner = message.direction === "outgoing" ? share.recipient : share.sender;
     if (!partner) return;
-    const existing = threadsMap.get(partner.id) || {
-      partner,
+    const normalizedPartner = {
+      ...partner,
+      fotoPerfil: normalizeAvatarUrl(partner.fotoPerfil),
+    };
+    const existing = threadsMap.get(normalizedPartner.id) || {
+      partner: normalizedPartner,
       messages: [],
     };
-    existing.partner = partner;
+    existing.partner = {
+      ...existing.partner,
+      ...normalizedPartner,
+    };
     existing.messages.push(message);
-    threadsMap.set(partner.id, existing);
+    threadsMap.set(normalizedPartner.id, existing);
   });
 
   const hydrated = Array.from(threadsMap.values()).map((thread) => {
@@ -145,19 +187,6 @@ function mergeThreadsPreservingPlaceholders(prevThreads, nextThreads) {
   return sortThreadsByRecency(Array.from(map.values()));
 }
 
-function BackAndSearch() {
-  const navigate = useNavigate();
-  const [searchQ, setSearchQ] = useState("");
-  return (
-    <>
-      <button className="back-btn" onClick={() => navigate(-1)} aria-label="Volver">Volver</button>
-      <form className="header-search" onSubmit={(e) => { e.preventDefault(); if (!searchQ.trim()) return; navigate(`/buscar?q=${encodeURIComponent(searchQ.trim())}`); }}>
-        <input className="header-search-input" type="text" placeholder="Buscar..." value={searchQ} onChange={(e) => setSearchQ(e.target.value)} />
-      </form>
-    </>
-  );
-}
-
 function Mensajes() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -168,12 +197,23 @@ function Mensajes() {
   const [activePartnerId, setActivePartnerId] = useState(null);
   const [composerText, setComposerText] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [headerQuery, setHeaderQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [partnerProfiles, setPartnerProfiles] = useState({});
   const wsRef = useRef(null);
   const reconnectRef = useRef(null);
+  const chatThreadRef = useRef(null);
   const [pendingRecipient, setPendingRecipient] = useState(() => extractRecipientFromSearch(location.search));
+  const requestedProfilesRef = useRef(new Set());
+  const meUsername = localStorage.getItem("username");
+
+  const handleHeaderSearchSubmit = useCallback((event) => {
+    event.preventDefault();
+    if (!headerQuery.trim()) return;
+    navigate(`/buscar?q=${encodeURIComponent(headerQuery.trim())}`);
+  }, [headerQuery, navigate]);
 
   useEffect(() => {
     setPendingRecipient(extractRecipientFromSearch(location.search));
@@ -185,7 +225,7 @@ function Mensajes() {
       const response = await fetch(`http://127.0.0.1:8000/musica/api/usuarios/${encodeURIComponent(username)}/`);
       if (!response.ok) return null;
       const data = await response.json();
-      return data;
+      return normalizeProfile(data);
     } catch (err) {
       console.warn("No se pudo obtener el perfil para preparar la conversación", err);
       return null;
@@ -212,6 +252,7 @@ function Mensajes() {
   }, []);
 
   const upsertShare = useCallback((share) => {
+    let partnerForProfile = null;
     setThreads((prev) => {
       const fallbackPayload = parseTokenPayload(localStorage.getItem("access") || "");
       const effectiveUserId = currentUserId || fallbackPayload?.user_id;
@@ -225,8 +266,15 @@ function Mensajes() {
       const partner = message.direction === "outgoing" ? share.recipient : share.sender;
       if (!partner) return prev;
 
+      const normalizedPartner = {
+        ...partner,
+        fotoPerfil: normalizeAvatarUrl(partner.fotoPerfil),
+      };
+
+      partnerForProfile = normalizedPartner;
+
       const existing = nextMap.get(partner.id) || {
-        partner,
+        partner: normalizedPartner,
         messages: [],
         lastMessageAt: null,
         lastMessagePreview: "",
@@ -252,7 +300,10 @@ function Mensajes() {
       existing.hasUnread = existing.messages.some(
         (msg) => msg.direction === "incoming" && !msg.is_read,
       );
-      existing.partner = partner;
+      existing.partner = {
+        ...existing.partner,
+        ...normalizedPartner,
+      };
       existing.isPlaceholder = false;
 
       nextMap.set(partner.id, existing);
@@ -263,7 +314,27 @@ function Mensajes() {
       });
       return ordered;
     });
-  }, [currentUserId]);
+
+    if (partnerForProfile?.id && partnerForProfile?.fotoPerfil) {
+      setPartnerProfiles((prev) => {
+        const current = prev[partnerForProfile.id];
+        if (current && current.fotoPerfil === partnerForProfile.fotoPerfil) {
+          return prev;
+        }
+        return {
+          ...prev,
+          [partnerForProfile.id]: {
+            ...(current || {}),
+            userId: partnerForProfile.userId ?? partnerForProfile.id,
+            username: partnerForProfile.username,
+            first_name: partnerForProfile.first_name ?? current?.first_name ?? null,
+            last_name: partnerForProfile.last_name ?? current?.last_name ?? null,
+            fotoPerfil: partnerForProfile.fotoPerfil,
+          },
+        };
+      });
+    }
+  }, [currentUserId, setPartnerProfiles]);
 
   const upsertShareRef = useRef(upsertShare);
   useEffect(() => {
@@ -309,6 +380,116 @@ function Mensajes() {
   }, [loadShares]);
 
   useEffect(() => {
+    if (!partnerProfiles || !Object.keys(partnerProfiles).length) return;
+    setThreads((prev) => prev.map((thread) => {
+      const partnerId = thread.partner?.id;
+      if (!partnerId) return thread;
+      const profile = partnerProfiles[partnerId];
+      if (!profile) return thread;
+
+      const nextAvatar = profile.fotoPerfil ?? thread.partner.fotoPerfil ?? null;
+      const nextFirstName = profile.first_name ?? thread.partner.first_name;
+      const nextLastName = profile.last_name ?? thread.partner.last_name;
+      const nextUsername = profile.username ?? thread.partner.username;
+
+      const avatarChanged = thread.partner.fotoPerfil !== nextAvatar;
+      const firstChanged = thread.partner.first_name !== nextFirstName;
+      const lastChanged = thread.partner.last_name !== nextLastName;
+      const usernameChanged = thread.partner.username !== nextUsername;
+
+      if (!avatarChanged && !firstChanged && !lastChanged && !usernameChanged) {
+        return thread;
+      }
+
+      return {
+        ...thread,
+        partner: {
+          ...thread.partner,
+          fotoPerfil: nextAvatar,
+          first_name: nextFirstName,
+          last_name: nextLastName,
+          username: nextUsername,
+        },
+      };
+    }));
+  }, [partnerProfiles]);
+
+  useEffect(() => {
+    const uniquePartners = threads
+      .map((thread) => thread.partner)
+      .filter((partner) => partner && partner.id && partner.username);
+
+    if (!uniquePartners.length) return;
+
+    const pending = uniquePartners.filter((partner) => (
+      !partnerProfiles[partner.id]
+      && !requestedProfilesRef.current.has(partner.id)
+    ));
+
+    if (!pending.length) return;
+
+    pending.forEach((partner) => requestedProfilesRef.current.add(partner.id));
+
+    let cancelled = false;
+
+    const loadProfiles = async () => {
+      const results = await Promise.all(pending.map(async (partner) => {
+        try {
+          const profile = await fetchRecipientProfile(partner.username);
+          if (!profile || cancelled) {
+            return null;
+          }
+          const normalized = normalizeProfile(profile);
+          return [normalized.userId ?? partner.id, normalized];
+        } catch (err) {
+          return null;
+        }
+      }));
+
+      if (cancelled) return;
+
+      setPartnerProfiles((prev) => {
+        let mutated = false;
+        const next = { ...prev };
+        results.forEach((entry) => {
+          if (!entry) return;
+          const [id, profile] = entry;
+          const existing = next[id];
+          if (!existing) {
+            next[id] = profile;
+            mutated = true;
+            return;
+          }
+          const merged = {
+            ...existing,
+            ...profile,
+          };
+          if (
+            existing.fotoPerfil !== merged.fotoPerfil
+            || existing.username !== merged.username
+            || existing.first_name !== merged.first_name
+            || existing.last_name !== merged.last_name
+          ) {
+            next[id] = merged;
+            mutated = true;
+          }
+        });
+        return mutated ? next : prev;
+      });
+
+      pending.forEach((partner) => {
+        requestedProfilesRef.current.delete(partner.id);
+      });
+    };
+
+    loadProfiles();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [threads, partnerProfiles, fetchRecipientProfile]);
+
+  useEffect(() => {
     if (!threads.length) {
       if (activePartnerId !== null) {
         setActivePartnerId(null);
@@ -333,12 +514,64 @@ function Mensajes() {
       if (!resolved.id) {
         const profileData = await fetchRecipientProfile(resolved.username);
         if (profileData?.userId) {
+          const normalizedProfile = normalizeProfile(profileData);
+          const profileName = normalizedProfile.first_name || normalizedProfile.last_name
+            ? `${normalizedProfile.first_name ?? ""} ${normalizedProfile.last_name ?? ""}`.trim()
+            : normalizedProfile.username;
           resolved = {
             ...resolved,
-            id: profileData.userId,
-            name: profileData.nombre || profileData.username || resolved.name,
+            id: normalizedProfile.userId,
+            name: profileName || resolved.name,
+            fotoPerfil: normalizedProfile.fotoPerfil || null,
           };
+          setPartnerProfiles((prev) => {
+            const existing = prev[normalizedProfile.userId];
+            if (
+              existing
+              && existing.fotoPerfil === normalizedProfile.fotoPerfil
+              && existing.username === normalizedProfile.username
+              && existing.first_name === normalizedProfile.first_name
+              && existing.last_name === normalizedProfile.last_name
+            ) {
+              return prev;
+            }
+            return {
+              ...prev,
+              [normalizedProfile.userId]: {
+                ...(existing || {}),
+                ...normalizedProfile,
+              },
+            };
+          });
         }
+      } else if (resolved.fotoPerfil) {
+        resolved.fotoPerfil = normalizeAvatarUrl(resolved.fotoPerfil);
+        setPartnerProfiles((prev) => {
+          const existing = prev[resolved.id];
+          const nextProfile = {
+            userId: resolved.id,
+            username: resolved.username,
+            first_name: resolved.first_name ?? existing?.first_name ?? null,
+            last_name: resolved.last_name ?? existing?.last_name ?? null,
+            fotoPerfil: resolved.fotoPerfil,
+          };
+          if (
+            existing
+            && existing.fotoPerfil === nextProfile.fotoPerfil
+            && existing.username === nextProfile.username
+            && existing.first_name === nextProfile.first_name
+            && existing.last_name === nextProfile.last_name
+          ) {
+            return prev;
+          }
+          return {
+            ...prev,
+            [resolved.id]: {
+              ...(existing || {}),
+              ...nextProfile,
+            },
+          };
+        });
       }
 
       if (cancelled) return;
@@ -356,6 +589,7 @@ function Mensajes() {
         username: resolved.username,
         first_name: displayName,
         last_name: "",
+        fotoPerfil: normalizeAvatarUrl(resolved.fotoPerfil) || null,
       };
 
       let matchedPartnerId = null;
@@ -400,7 +634,7 @@ function Mensajes() {
     return () => {
       cancelled = true;
     };
-  }, [pendingRecipient, fetchRecipientProfile]);
+  }, [pendingRecipient, fetchRecipientProfile, setPartnerProfiles]);
 
   useEffect(() => {
     let cancelled = false;
@@ -500,6 +734,30 @@ function Mensajes() {
     [activePartnerId, threads],
   );
 
+  useEffect(() => {
+    const container = chatThreadRef.current;
+    if (!container) return undefined;
+
+    const scrollToBottom = () => {
+      container.scrollTop = container.scrollHeight;
+    };
+
+    const observer = new MutationObserver(scrollToBottom);
+    observer.observe(container, { childList: true });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!activeThread) return;
+    const container = chatThreadRef.current;
+    if (!container) return;
+
+    container.scrollTop = container.scrollHeight;
+  }, [activeThread, activeThread?.messages?.length]);
+
   const handleSend = useCallback(async () => {
     const trimmed = composerText.trim();
     if (!trimmed || !activeThread) return;
@@ -549,14 +807,20 @@ function Mensajes() {
       handleSend();
     }
   }, [handleSend]);
-
-  const meUsername = localStorage.getItem("username");
-
   return (
-    <div className="mensajes-container app-fullscreen">
+    <>
       <header className="header-bar">
         <div className="header-center">
-          <BackAndSearch />
+          <button className="back-btn" onClick={() => navigate(-1)} aria-label="Volver">Volver</button>
+          <form className="header-search" onSubmit={handleHeaderSearchSubmit}>
+            <input
+              className="header-search-input"
+              type="text"
+              placeholder="Buscar..."
+              value={headerQuery}
+              onChange={(event) => setHeaderQuery(event.target.value)}
+            />
+          </form>
         </div>
         <div className="header-right">
           <button className="header-bell" onClick={() => setPanelOpen(true)} aria-label="Notificaciones">
@@ -587,7 +851,9 @@ function Mensajes() {
       </nav>
 
       <NotificationPanel open={panelOpen} onClose={() => setPanelOpen(false)} />
-      <aside className="mensajes-sidebar">
+
+      <div className="mensajes-container">
+        <aside className="mensajes-sidebar">
         <div className="sidebar-header compact">
           <div className="sidebar-title">Conversaciones</div>
         </div>
@@ -607,17 +873,32 @@ function Mensajes() {
           )}
           {filteredThreads.map((thread) => {
             const isActive = activePartnerId === thread.partner.id;
+            const cachedProfile = partnerProfiles[thread.partner.id];
+            const avatarSrc = cachedProfile?.fotoPerfil
+              ?? normalizeAvatarUrl(thread.partner?.fotoPerfil)
+              ?? null;
+            const normalizedUsername = thread.partner.username || "";
+            const avatarInitial = (normalizedUsername.charAt(0) || "?").toUpperCase();
             return (
               <li
                 key={thread.partner.id}
                 className={`contact-item ${isActive ? "active" : ""} ${thread.hasUnread ? "unread" : ""}`}
                 onClick={() => setActivePartnerId(thread.partner.id)}
               >
-                <img
-                  src="/default-avatar.png"
-                  alt="avatar"
-                  className="contact-avatar"
-                />
+                {avatarSrc ? (
+                  <img
+                    src={avatarSrc}
+                    alt={`Avatar de ${formatName(thread.partner)}`}
+                    className="contact-avatar"
+                    onError={(event) => {
+                      event.currentTarget.src = "/default-avatar.png";
+                    }}
+                  />
+                ) : (
+                  <div className="contact-avatar contact-avatar-fallback" aria-hidden="true">
+                    {avatarInitial}
+                  </div>
+                )}
                 <div className="contact-texts">
                   <div className="contact-row">
                     <span className="contact-name">{formatName(thread.partner)}</span>
@@ -630,67 +911,94 @@ function Mensajes() {
             );
           })}
         </ul>
-      </aside>
+        </aside>
 
-      <main className="mensajes-main">
-        {activeThread ? (
-          <>
-            <header className="chat-header">
-              <div className="chat-peer">
-                <img src="/default-avatar.png" alt="avatar" className="chat-avatar" />
-                <div>
-                  <div className="chat-name">{formatName(activeThread.partner)}</div>
-                  <div className="chat-status">
-                    Último mensaje {formatRelativeTime(activeThread.lastMessageAt) || "sin actividad"}
+        <main className="mensajes-main">
+          {activeThread ? (
+            <>
+              <header className="chat-header">
+                <div className="chat-peer">
+                  {(() => {
+                    const chatProfile = partnerProfiles[activeThread.partner.id];
+                    const chatAvatarSrc = chatProfile?.fotoPerfil
+                      ?? normalizeAvatarUrl(activeThread.partner?.fotoPerfil)
+                      ?? null;
+                    const normalizedUsername = activeThread.partner.username || "";
+                    const chatInitial = (normalizedUsername.charAt(0) || "?").toUpperCase();
+                    if (chatAvatarSrc) {
+                      return (
+                        <img
+                          src={chatAvatarSrc}
+                          alt={`Avatar de ${formatName(activeThread.partner)}`}
+                          className="chat-avatar"
+                          onError={(event) => {
+                            event.currentTarget.src = "/default-avatar.png";
+                          }}
+                        />
+                      );
+                    }
+                    return (
+                      <div className="chat-avatar chat-avatar-fallback" aria-hidden="true">
+                        {chatInitial}
+                      </div>
+                    );
+                  })()}
+                  <div>
+                    <div className="chat-name">{formatName(activeThread.partner)}</div>
+                    <div className="chat-status">
+                      Último mensaje {formatRelativeTime(activeThread.lastMessageAt) || "sin actividad"}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="chat-actions">
-                <button className="chat-btn" type="button" onClick={loadShares}>Actualizar</button>
-              </div>
-            </header>
-
-            {error && (
-              <div className="chat-error" role="alert">{error}</div>
-            )}
-
-            <section className="chat-thread">
-              {activeThread.messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`bubble ${message.direction === "outgoing" ? "mine" : "theirs"}`}
-                >
-                  <div className="bubble-text">
-                    {message.text || `Contenido compartido (${message.contentType})`}
-                  </div>
-                  <div className="bubble-time">{formatRelativeTime(message.createdAt)}</div>
+                <div className="chat-actions">
+                  <button className="chat-btn" type="button" onClick={loadShares}>Actualizar</button>
                 </div>
-              ))}
-            </section>
+              </header>
 
-            <footer className="chat-composer elevated">
-              <div className="composer-inner">
-                <textarea
-                  className="compose-input"
-                  placeholder="Escribe un mensaje..."
-                  value={composerText}
-                  onChange={(event) => setComposerText(event.target.value)}
-                  onKeyDown={handleComposerKeyDown}
-                  rows={1}
-                />
-                <button className="compose-send" type="button" onClick={handleSend} aria-label="Enviar mensaje">
-                  Enviar
-                </button>
-              </div>
-            </footer>
-          </>
-        ) : (
-          <div className="chat-empty">
-            {error ? error : "Selecciona una conversación para empezar."}
-          </div>
-        )}
-      </main>
-    </div>
+              {error && (
+                <div className="chat-error" role="alert">{error}</div>
+              )}
+
+              <section className="chat-thread" ref={chatThreadRef}>
+                {activeThread.messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`bubble ${message.direction === "outgoing" ? "mine" : "theirs"}`}
+                  >
+                    <div className="bubble-text">
+                      {message.text || `Contenido compartido (${message.contentType})`}
+                    </div>
+                    <div className="bubble-time">{formatRelativeTime(message.createdAt)}</div>
+                  </div>
+                ))}
+              </section>
+
+              <footer className="chat-composer elevated">
+                <div className="composer-inner">
+                  <textarea
+                    className="compose-input"
+                    placeholder="Escribe un mensaje..."
+                    value={composerText}
+                    onChange={(event) => setComposerText(event.target.value)}
+                    onKeyDown={handleComposerKeyDown}
+                    rows={1}
+                  />
+                  <button className="compose-send" type="button" onClick={handleSend} aria-label="Enviar mensaje">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path d="M2 3l20 9-20 9 6-9-6-9zm8.14 9l-3.11 4.67L19.11 12 7.03 7.33 10.14 12z" />
+                    </svg>
+                  </button>
+                </div>
+              </footer>
+            </>
+          ) : (
+            <div className="chat-empty">
+              {error ? error : "Selecciona una conversación para empezar."}
+            </div>
+          )}
+        </main>
+      </div>
+    </>
   );
 }
 

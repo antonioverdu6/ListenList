@@ -36,6 +36,7 @@ function MiPerfil() {
   const { username } = useParams();
   const navigate = useNavigate();
   const meUsername = localStorage.getItem('username');
+  const isOwnProfile = meUsername === username;
 
   // Estados
   const [usuario, setUsuario] = useState({});
@@ -44,10 +45,13 @@ function MiPerfil() {
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [editando, setEditando] = useState(false);
   const [formData, setFormData] = useState({
-    fotoPerfil: "",
     banner: "",
     biografia: "",
   });
+  const [avatarPreview, setAvatarPreview] = useState("");
+  const [avatarFile, setAvatarFile] = useState(null);
+  const avatarPreviewUrlRef = useRef(null);
+  const [avatarRemoved, setAvatarRemoved] = useState(false);
   const [comentarios, setComentarios] = useState([]);
   const [artistasSeguidos, setArtistasSeguidos] = useState([]);
   const [valoraciones, setValoraciones] = useState([]);
@@ -72,6 +76,15 @@ function MiPerfil() {
   const [musicError, setMusicError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const popoverRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreviewUrlRef.current) {
+        URL.revokeObjectURL(avatarPreviewUrlRef.current);
+        avatarPreviewUrlRef.current = null;
+      }
+    };
+  }, []);
   const savePicks = useCallback(async (nextPicks) => {
     try {
       let token = localStorage.getItem('access');
@@ -149,10 +162,16 @@ function MiPerfil() {
         const data = await res.json();
         setUsuario(data);
         setFormData({
-          fotoPerfil: data.fotoPerfil || "",
           banner: data.banner || "",
           biografia: data.biografia || "",
         });
+        if (avatarPreviewUrlRef.current) {
+          URL.revokeObjectURL(avatarPreviewUrlRef.current);
+          avatarPreviewUrlRef.current = null;
+        }
+        setAvatarFile(null);
+        setAvatarRemoved(false);
+        setAvatarPreview(data.fotoPerfil || data.foto_perfil || "");
         setComentarios(data.comentarios || []);
         setValoraciones(data.valoraciones || []);
         // Load picks via dedicated picks endpoint with token refresh
@@ -397,6 +416,65 @@ function MiPerfil() {
     }
   };
 
+  const handleAvatarSelect = (event) => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Por favor selecciona una imagen válida.");
+      return;
+    }
+    if (avatarPreviewUrlRef.current) {
+      URL.revokeObjectURL(avatarPreviewUrlRef.current);
+      avatarPreviewUrlRef.current = null;
+    }
+    const objectUrl = URL.createObjectURL(file);
+    avatarPreviewUrlRef.current = objectUrl;
+    setAvatarPreview(objectUrl);
+    setAvatarFile(file);
+    setAvatarRemoved(false);
+    event.target.value = "";
+  };
+
+  const handleRemoveAvatar = () => {
+    if (avatarPreviewUrlRef.current) {
+      URL.revokeObjectURL(avatarPreviewUrlRef.current);
+      avatarPreviewUrlRef.current = null;
+    }
+    setAvatarPreview("");
+    setAvatarFile(null);
+    setAvatarRemoved(true);
+  };
+
+  const handleCancelarEdicion = () => {
+    if (avatarPreviewUrlRef.current) {
+      URL.revokeObjectURL(avatarPreviewUrlRef.current);
+      avatarPreviewUrlRef.current = null;
+    }
+    setAvatarPreview(usuario.fotoPerfil || usuario.foto_perfil || "");
+    setAvatarFile(null);
+    setAvatarRemoved(false);
+    setFormData({
+      banner: usuario.banner || "",
+      biografia: usuario.biografia || "",
+    });
+    setEditando(false);
+  };
+
+  const handleIniciarEdicion = () => {
+    if (avatarPreviewUrlRef.current) {
+      URL.revokeObjectURL(avatarPreviewUrlRef.current);
+      avatarPreviewUrlRef.current = null;
+    }
+    setFormData({
+      banner: usuario.banner || "",
+      biografia: usuario.biografia || "",
+    });
+    setAvatarPreview(usuario.fotoPerfil || usuario.foto_perfil || "");
+    setAvatarFile(null);
+    setAvatarRemoved(false);
+    setEditando(true);
+  };
+
   // Guardar cambios en perfil
   const handleGuardar = async () => {
     try {
@@ -413,13 +491,25 @@ function MiPerfil() {
         console.error("Error verificando token:", e);
       }
 
+      const payload = new FormData();
+      if (typeof formData.banner === "string") {
+        payload.append("banner", formData.banner);
+      }
+      if (typeof formData.biografia === "string") {
+        payload.append("biografia", formData.biografia);
+      }
+      if (avatarFile) {
+        payload.append("fotoPerfil", avatarFile);
+      } else if (avatarRemoved) {
+        payload.append("remove_avatar", "1");
+      }
+
       const response = await fetch(`http://127.0.0.1:8000/musica/api/usuarios/${username}/`, {
-        method: "PUT", // <-- solo este cambio clave
+        method: "PUT",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: payload,
       });
 
       const data = await response.json();
@@ -429,6 +519,17 @@ function MiPerfil() {
       }
 
       setUsuario(data);
+      setFormData({
+        banner: data.banner || "",
+        biografia: data.biografia || "",
+      });
+      if (avatarPreviewUrlRef.current) {
+        URL.revokeObjectURL(avatarPreviewUrlRef.current);
+        avatarPreviewUrlRef.current = null;
+      }
+      setAvatarFile(null);
+      setAvatarRemoved(false);
+      setAvatarPreview(data.fotoPerfil || data.foto_perfil || "");
       setEditando(false);
     } catch (err) {
       console.error("Error guardando perfil:", err);
@@ -596,7 +697,11 @@ function MiPerfil() {
   }, [comentarios]);
 
   const banner = usuario.banner || "/default-banner.jpg";
-  const fotoPerfil = usuario.foto_perfil || "/default-avatar.png";
+  const normalizedUsername = usuario.username || username || "";
+  const avatarInitial = (normalizedUsername.charAt(0) || "?").toUpperCase();
+  const rawAvatar = avatarPreview || usuario.fotoPerfil || usuario.foto_perfil || "";
+  const shouldShowAvatarFallback = avatarRemoved || !rawAvatar;
+  const fotoPerfil = shouldShowAvatarFallback ? "" : rawAvatar;
   const nombre = usuario.nombre;
   const perfilUserId = usuario.userId;
 
@@ -680,12 +785,32 @@ function MiPerfil() {
   
 
 
-  const openPopover = (index) => { setOpenActionMenuIndex(null); setOpenPopoverIndex(index); setActiveFilter('songs'); setSearchTerm(''); };
-  const toggleActionMenu = (index) => { setOpenActionMenuIndex(prev => prev === index ? null : index); };
+  const openPopover = (index) => {
+    if (!isOwnProfile) return;
+    setOpenActionMenuIndex(null);
+    setOpenPopoverIndex(index);
+    setActiveFilter('songs');
+    setSearchTerm('');
+  };
+  const toggleActionMenu = (index) => {
+    if (!isOwnProfile) return;
+    setOpenActionMenuIndex(prev => (prev === index ? null : index));
+  };
   const navigateToItem = (it) => {
     if (!it) return;
     const href = it.type === 'song' ? `/cancion/${it.id}` : it.type === 'album' ? `/album/${it.id}` : `/artista/${it.id}`;
     window.location.href = href;
+  };
+  const handlePickClick = (item, index) => {
+    if (!isOwnProfile) {
+      if (item) navigateToItem(item);
+      return;
+    }
+    if (item) {
+      navigateToItem(item);
+    } else {
+      openPopover(index);
+    }
   };
   // (removed debug wrapper) use `openPopover` directly to open the popover
   const selectPick = (item) => {
@@ -797,7 +922,7 @@ function MiPerfil() {
               <path d="M15 17H9a3 3 0 0 1-3-3V9a6 6 0 1 1 12 0v5a3 3 0 0 1-3 3z" />
               <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
-            {unreadNotifications > 0 && <span className="header-badge">{unreadNotifications}</span>}
+            {unreadNotifications > 0 && <span className="header-badge header-badge--alert">{unreadNotifications}</span>}
           </button>
         </div>
         <Link to="/" className="logo">
@@ -832,11 +957,19 @@ function MiPerfil() {
         />
 
         <div className="perfil-header">
-          <img
-            src={formData.fotoPerfil || fotoPerfil}
-            alt="Foto de perfil"
-            className="perfil-avatar"
-          />
+          <div className="perfil-avatar-wrapper">
+            {shouldShowAvatarFallback ? (
+              <div className="perfil-avatar perfil-avatar-fallback" aria-hidden="true">
+                {avatarInitial}
+              </div>
+            ) : (
+              <img
+                src={fotoPerfil}
+                alt="Foto de perfil"
+                className="perfil-avatar"
+              />
+            )}
+          </div>
           <div className="perfil-info">
             <h1 className="perfil-nombre">{nombre || username}</h1>
 
@@ -889,26 +1022,58 @@ function MiPerfil() {
             {/* Edición de perfil */}
             {editando ? (
               <>
-                <label>URL foto de perfil:</label>
-                <input
-                  type="text"
-                  value={formData.fotoPerfil}
-                  onChange={(e) =>
-                    setFormData({ ...formData, fotoPerfil: e.target.value })
-                  }
-                />
+                <label htmlFor="avatar-upload">Foto de perfil</label>
+                <div className="avatar-edit-controls">
+                  <div className="perfil-avatar-wrapper">
+                    {shouldShowAvatarFallback ? (
+                      <div className="perfil-avatar perfil-avatar-fallback" aria-hidden="true">
+                        {avatarInitial}
+                      </div>
+                    ) : (
+                      <img
+                        src={fotoPerfil}
+                        alt="Vista previa de la foto"
+                        className="perfil-avatar"
+                      />
+                    )}
+                  </div>
+                  <div className="avatar-actions">
+                    <label className="avatar-upload-label" htmlFor="avatar-upload">
+                      <span>Elegir imagen</span>
+                      <input
+                        id="avatar-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarSelect}
+                        className="avatar-file-input"
+                      />
+                    </label>
+                    {!shouldShowAvatarFallback && (
+                      <button
+                        type="button"
+                        className="avatar-remove-btn"
+                        onClick={handleRemoveAvatar}
+                      >
+                        Quitar foto
+                      </button>
+                    )}
+                  </div>
+                </div>
 
-                <label>URL banner:</label>
+                <label htmlFor="banner-url">URL banner</label>
                 <input
+                  id="banner-url"
                   type="text"
                   value={formData.banner}
                   onChange={(e) =>
                     setFormData({ ...formData, banner: e.target.value })
                   }
+                  placeholder="https://..."
                 />
 
-                <label>Biografía:</label>
+                <label htmlFor="perfil-biografia">Biografía</label>
                 <textarea
+                  id="perfil-biografia"
                   value={formData.biografia}
                   onChange={(e) =>
                     setFormData({ ...formData, biografia: e.target.value })
@@ -916,8 +1081,8 @@ function MiPerfil() {
                 />
 
                 <div className="botones-edicion">
-                  <button onClick={handleGuardar}>Guardar</button>
-                  <button onClick={() => setEditando(false)}>Cancelar</button>
+                  <button type="button" onClick={handleGuardar}>Guardar</button>
+                  <button type="button" onClick={handleCancelarEdicion}>Cancelar</button>
                 </div>
               </>
             ) : (
@@ -929,7 +1094,7 @@ function MiPerfil() {
                   }}
                 />
                 {localStorage.getItem("username") === username && (
-                  <button onClick={() => setEditando(true)}>Editar perfil</button>
+                  <button type="button" onClick={handleIniciarEdicion}>Editar perfil</button>
                 )}
               </>
             )}
@@ -942,7 +1107,7 @@ function MiPerfil() {
           <div className="your-picks-layout">
             {pickedItems.map((it, i) => (
               <div key={i} style={{ width: 220, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-                {it && (
+                {isOwnProfile && it && (
                   <button
                     aria-label="Acciones"
                     onClick={() => toggleActionMenu(i)}
@@ -953,7 +1118,7 @@ function MiPerfil() {
                   </button>
                 )}
                 <button
-                  onClick={() => (it ? navigateToItem(it) : openPopover(i))}
+                  onClick={() => handlePickClick(it, i)}
                   style={{
                     width: 220,
                     height: 240,
@@ -997,7 +1162,7 @@ function MiPerfil() {
                     </div>
                   )}
                 </button>
-                {it && openActionMenuIndex === i && (
+                {isOwnProfile && it && openActionMenuIndex === i && (
                   <div style={{ position: 'absolute', top: -40, right: 3, background: '#1f2224', border: '1px solid #3a3f44', borderRadius: 8, boxShadow: '0 6px 18px rgba(0,0,0,0.35)', overflow: 'hidden', zIndex: 1000, width: 104, opacity: actionMenuVisible ? 1 : 0, transform: actionMenuVisible ? 'translateY(0) scale(1)' : 'translateY(-6px) scale(0.98)', transition: 'opacity 160ms ease, transform 180ms ease' }}>
                     <button onClick={() => { setOpenActionMenuIndex(null); openPopover(i); }} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 8px', width: '100%', textAlign: 'left', color: '#c7d0d6', background: 'transparent', border: 'none', cursor: 'pointer' }}>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>

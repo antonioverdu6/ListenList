@@ -7,6 +7,11 @@ from django.db import models
 from django.contrib.auth.models import User
 
 
+def _fix_scheme(url_value):
+    if isinstance(url_value, str) and url_value.startswith(("http:/", "https:/")) and not url_value.startswith(("http://", "https://")):
+        return url_value.replace(":/", "://", 1)
+    return url_value
+
 
 class GeneroSerializer(serializers.ModelSerializer):
     class Meta:
@@ -66,33 +71,10 @@ class ArtistaSerializer(serializers.ModelSerializer):
 
     def get_generos(self, obj):
         try:
-            # Si el artista ya tiene géneros asociados en la DB, devolverlos
-            if obj.generos.exists():
-                return GeneroSerializer(obj.generos.all(), many=True).data
-
-            # Fallback: intentar obtener géneros desde Spotify preferentemente por spotify_id
-            from .spotify_client import obtener_generos_por_id, obtener_generos_y_id_por_nombre
-            if getattr(obj, 'spotify_id', None):
-                generos = obtener_generos_por_id(obj.spotify_id)
-                artist_id_used = obj.spotify_id
-            else:
-                generos, artist_id_used = obtener_generos_y_id_por_nombre(obj.nombre)
-            # Persistir géneros en DB y relacionarlos al artista
-            created_objs = []
-            from .models import Genero
-            for g in generos:
-                if not g:
-                    continue
-                gen_obj, _ = Genero.objects.get_or_create(nombre=g)
-                obj.generos.add(gen_obj)
-                created_objs.append(gen_obj)
-
-            # If we discovered the spotify artist id from the search, persist it on the model
-            if artist_id_used and not getattr(obj, 'spotify_id', None):
-                obj.spotify_id = artist_id_used
-                obj.save(update_fields=['spotify_id'])
-
-            return GeneroSerializer(created_objs, many=True).data if created_objs else []
+            # Avoid live Spotify lookups here to keep list responses fast and predictable.
+            if not obj.generos.exists():
+                return []
+            return GeneroSerializer(obj.generos.all(), many=True).data
         except Exception:
             return []
 
@@ -299,6 +281,7 @@ class PerfilSerializer(serializers.ModelSerializer):
     comentarios = serializers.SerializerMethodField()
     valoraciones = serializers.SerializerMethodField()
     picks = serializers.JSONField(required=False)
+    fotoPerfil = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = Perfil
@@ -359,6 +342,66 @@ class PerfilSerializer(serializers.ModelSerializer):
             })
         # Ordenar por fecha (más recientes primero)
         return sorted(data, key=lambda x: x.get("fecha") or 0, reverse=True)
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get("request") if isinstance(self.context, dict) else None
+        foto_field = getattr(instance, "fotoPerfil", None)
+        if foto_field:
+            name = getattr(foto_field, "name", None)
+            name = _fix_scheme(name)
+            if isinstance(name, str) and name.startswith(("http://", "https://")):
+                data["fotoPerfil"] = name
+            else:
+                try:
+                    url = foto_field.url if hasattr(foto_field, "url") else str(foto_field)
+                except (ValueError, OSError):
+                    url = None
+                if url:
+                    url = _fix_scheme(url)
+                    if isinstance(url, str) and url.startswith(("http://", "https://")):
+                        data["fotoPerfil"] = url
+                    else:
+                        data["fotoPerfil"] = request.build_absolute_uri(url) if request else url
+                else:
+                    data["fotoPerfil"] = None
+        else:
+            data["fotoPerfil"] = None
+        return data
+
+    def update(self, instance, validated_data):
+        request = self.context.get("request") if isinstance(self.context, dict) else None
+
+        remove_flag = False
+        if request is not None:
+            raw_flag = request.data.get("remove_avatar") or request.data.get("removeAvatar")
+            if isinstance(raw_flag, str):
+                remove_flag = raw_flag.lower() in {"1", "true", "yes", "on"}
+            else:
+                remove_flag = bool(raw_flag)
+
+        new_avatar = validated_data.pop("fotoPerfil", serializers.empty)
+
+        if remove_flag or new_avatar is None:
+            if getattr(instance, "fotoPerfil", None):
+                try:
+                    instance.fotoPerfil.delete(save=False)
+                except Exception:
+                    pass
+            instance.fotoPerfil = None
+        elif new_avatar is not serializers.empty:
+            if getattr(instance, "fotoPerfil", None):
+                try:
+                    instance.fotoPerfil.delete(save=False)
+                except Exception:
+                    pass
+            instance.fotoPerfil = new_avatar
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+        return instance
 
 
 class NotificacionSerializer(serializers.ModelSerializer):

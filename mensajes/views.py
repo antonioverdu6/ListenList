@@ -35,6 +35,7 @@ class ShareViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.Gene
 
     def perform_create(self, serializer):
         share = serializer.save(sender=self.request.user)
+        self._create_notification(share)
         self._broadcast_share("share_created", share)
         return share
 
@@ -56,8 +57,23 @@ class ShareViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.Gene
             share.read_at = timezone.now()
             share.save(update_fields=["is_read", "read_at"])
             self._broadcast_share("share_read", share)
+        self._mark_message_notifications_read(share, request.user)
         serializer = ShareSerializer(share, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated], url_path="unread_count")
+    def unread_count(self, request):
+        user = request.user
+        unread_qs = Share.objects.filter(
+            recipient=user,
+            is_read=False,
+            deleted_at__isnull=True,
+        )
+        conversations = unread_qs.values("sender_id").distinct().count()
+        return Response({
+            "conversations_unread": conversations,
+            "messages_unread": unread_qs.count(),
+        })
 
     @staticmethod
     def _broadcast_share(event_type: str, share: Share) -> None:
@@ -72,3 +88,42 @@ class ShareViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.Gene
                 user_group_name(user_id),
                 {"type": event_type, "data": payload},
             )
+
+    @staticmethod
+    def _create_notification(share: Share) -> None:
+        if share.sender_id == share.recipient_id:
+            return
+        try:
+            from musica.models import Notificacion
+        except Exception:
+            return
+
+        mensaje = share.message_text.strip() if share.message_text else ""
+        preview = mensaje[:80] + ("…" if len(mensaje) > 80 else "") if mensaje else ""
+        if preview:
+            preview = " ".join(preview.splitlines()).strip()
+        contenido = f"{share.sender.username} te ha enviado un mensaje"
+        if preview:
+            contenido = f"{contenido}: {preview}"
+
+        Notificacion.objects.create(
+            destinatario=share.recipient,
+            tipo="message",
+            origen_user=share.sender,
+            contenido=contenido,
+            enlace=f"/mensajes?to={share.sender.username}&toId={share.sender.id}",
+        )
+
+    @staticmethod
+    def _mark_message_notifications_read(share: Share, user) -> None:
+        try:
+            from musica.models import Notificacion
+        except Exception:
+            return
+
+        Notificacion.objects.filter(
+            destinatario=user,
+            origen_user_id=share.sender_id,
+            tipo="message",
+            leido=False,
+        ).update(leido=True)

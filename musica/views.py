@@ -1,12 +1,15 @@
+import logging
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.db.models import Sum
 from django.db.models import Avg, Count
-from .models import Artista, Cancion, Album, ComentarioCancion, ValoracionCancion, ValoracionAlbum, ValoracionArtista, ListaMusical, ComentarioAlbum, Perfil, Seguimiento, ComentarioArtista, SeguimientoArtista
+from .models import Artista, Cancion, Album, ComentarioCancion, ValoracionCancion, ValoracionAlbum, ValoracionArtista, ListaMusical, ComentarioAlbum, Perfil, Seguimiento, ComentarioArtista, SeguimientoArtista, SpotifyTrackFetch
 from .forms import RegistroForm, ValoracionCancionForm, ValoracionAlbumForm, ValoracionArtistaForm
 from .spotify_client import buscar_canciones, get_or_create_cancion, get_or_create_album
+from spotipy.exceptions import SpotifyException
 from django.utils import timezone
 from .audd_api import obtener_letra
 from datetime import date, timedelta
@@ -17,21 +20,55 @@ from .models import Notificacion
 from rest_framework import generics
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.contrib.auth.models import User
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status
 from rest_framework import generics, permissions
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
+
+
+logger = logging.getLogger(__name__)
 
 
 
 # Create your views here.
 
+def _fix_scheme(url_value):
+    if isinstance(url_value, str) and url_value.startswith(("http:/", "https:/")) and not url_value.startswith(("http://", "https://")):
+        return url_value.replace(":/", "://", 1)
+    return url_value
 
-def lista_artistas(request):
-    artistas = Artista.objects.all()
-    return render(request, 'musica/artistas.html', {'artistas': artistas})
+
+def _build_avatar_url(perfil, request):
+    if not perfil:
+        return None
+
+    foto = getattr(perfil, "fotoPerfil", None)
+    if foto:
+        try:
+            return request.build_absolute_uri(foto.url)
+        except ValueError:
+            return foto.url
+
+    # Fallback to banner if provided; better than returning nothing.
+    banner_url = getattr(perfil, "banner", None)
+    return banner_url if banner_url else None
+
+
+def _resolve_retry_seconds(exc, default_wait=30):
+    if isinstance(exc, SpotifyException):
+        headers = getattr(exc, "headers", None) or {}
+        retry_after = headers.get("Retry-After") or headers.get("retry-after")
+        if retry_after:
+            try:
+                return max(int(float(retry_after)), 1)
+            except (TypeError, ValueError):
+                pass
+        if getattr(exc, "http_status", None) == 429:
+            return max(default_wait, 30)
+    return default_wait
 
 
 import json
@@ -162,7 +199,64 @@ def inicio(request):
 
 @ensure_csrf_cookie
 def detalle_cancion(request, spotify_id): # ← Recibe spotify_id correctamente
-    cancion = get_or_create_cancion(spotify_id) # ← Usa get_or_create_cancion
+    cancion = Cancion.objects.filter(spotify_id=spotify_id).first()
+    task = SpotifyTrackFetch.objects.filter(spotify_id=spotify_id).first()
+
+    if not cancion:
+        if task and task.status != SpotifyTrackFetch.STATUS_SUCCESS and not task.is_due():
+            wait_seconds = max(task.seconds_until_retry(), 5)
+            return JsonResponse(
+                {
+                    "status": "pending",
+                    "message": "Estamos importando la canción desde Spotify. Vuelve a intentarlo en unos segundos.",
+                    "retryInSeconds": wait_seconds,
+                    "attempts": task.attempts,
+                },
+                status=202,
+            )
+
+        try:
+            cancion = get_or_create_cancion(spotify_id) # ← Usa get_or_create_cancion
+        except SpotifyException as exc:
+            wait_seconds = _resolve_retry_seconds(exc, default_wait=30)
+            logger.warning("Spotify no disponible al cargar canción %s: %s", spotify_id, exc)
+            task, _ = SpotifyTrackFetch.objects.get_or_create(
+                spotify_id=spotify_id,
+                defaults={
+                    "status": SpotifyTrackFetch.STATUS_PENDING,
+                },
+            )
+            task.schedule_retry(wait_seconds, error_message=str(exc))
+
+            return JsonResponse(
+                {
+                    "status": "pending",
+                    "message": "Estamos importando la canción desde Spotify. Vuelve a intentarlo en unos segundos.",
+                    "retryInSeconds": wait_seconds,
+                    "attempts": task.attempts,
+                },
+                status=202,
+            )
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.exception("Error recuperando canción %s", spotify_id)
+            task, _ = SpotifyTrackFetch.objects.get_or_create(
+                spotify_id=spotify_id,
+                defaults={
+                    "status": SpotifyTrackFetch.STATUS_PENDING,
+                },
+            )
+            task.schedule_retry(60, error_message=str(exc))
+            return JsonResponse({"error": "song_unavailable"}, status=500)
+
+    if task and task.status != SpotifyTrackFetch.STATUS_SUCCESS:
+        task.mark_success()
+    else:
+        SpotifyTrackFetch.objects.filter(spotify_id=spotify_id).update(
+            status=SpotifyTrackFetch.STATUS_SUCCESS,
+            last_error="",
+            next_retry_at=None,
+            updated_at=timezone.now(),
+        )
     
     # Normalizar fecha
     if cancion.album and cancion.album.fecha_lanzamiento:
@@ -208,21 +302,47 @@ def detalle_cancion(request, spotify_id): # ← Recibe spotify_id correctamente
         for c in cancion.comentarios.filter(parent__isnull=True)
     ]
 
-    # Canciones recomendadas
+    # Canciones recomendadas: mezcla del mismo artista y artistas con géneros en común
+    artista_actual = cancion.album.artista
+    generos_actuales = set(artista_actual.generos.values_list('id', flat=True))
+    
+    # Canciones del mismo artista (excluyendo la actual)
+    canciones_mismo_artista = list(
+        Cancion.objects.filter(album__artista=artista_actual)
+        .exclude(id=cancion.id)
+        .select_related('album', 'album__artista')[:10]
+    )
+    
+    # Canciones de artistas con al menos un género en común
+    canciones_generos_comunes = []
+    if generos_actuales:
+        canciones_generos_comunes = list(
+            Cancion.objects.filter(album__artista__generos__id__in=generos_actuales)
+            .exclude(album__artista=artista_actual)
+            .exclude(id=cancion.id)
+            .select_related('album', 'album__artista')
+            .distinct()[:10]
+        )
+    
+    # Combinar y mezclar aleatoriamente
+    import random
+    candidatas = canciones_mismo_artista + canciones_generos_comunes
+    random.shuffle(candidatas)
+    
     canciones_recomendadas = []
-    for rec in Cancion.objects.exclude(id=cancion.id).order_by("?")[:3]:
+    for rec in candidatas[:3]:
         canciones_recomendadas.append({
             "spotify_id": rec.spotify_id,
             "titulo": rec.titulo,
             "titulo_trunc": rec.titulo[:12] + "..." if len(rec.titulo) > 15 else rec.titulo,
             "album": {
-                "id": cancion.album.id,
-                "titulo": cancion.album.titulo,
-                "imagen_url": cancion.album.imagen_url,
-                "spotify_id": cancion.album.spotify_id,  # ← AGREGAR ESTA LÍNEA
+                "id": rec.album.id,
+                "titulo": rec.album.titulo,
+                "imagen_url": rec.album.imagen_url,
+                "spotify_id": rec.album.spotify_id,
                 "artista": {
-                    "id": cancion.album.artista.id,
-                    "nombre": cancion.album.artista.nombre,
+                    "id": rec.album.artista.id,
+                    "nombre": rec.album.artista.nombre,
                 },
             },
         })
@@ -555,7 +675,7 @@ def hello_world(request):
 
 # Vistas reales
 class ArtistaList(generics.ListAPIView):
-    queryset = Artista.objects.all()
+    queryset = Artista.objects.prefetch_related('generos').all()
     serializer_class = ArtistaSerializer
 
 class AlbumList(generics.ListAPIView):
@@ -574,12 +694,41 @@ class ListaMusicalList(generics.ListAPIView):
 from django.http import JsonResponse
 
 def buscar_api(request):
-    query = request.GET.get('q', '')
+    query = (request.GET.get('q') or '').strip()
     resultados = []
     if query:
-        resultados = buscar_canciones(query)  # lista de dicts con info de canciones
+        try:
+            resultados = buscar_canciones(query)
+        except Exception as err:  # pragma: no cover - defensive fallback
+            logger.exception("Error consultando Spotify: %s", err)
+            resultados = []
 
-    # Truncar títulos largos y álbumes igual que en buscar()
+        if not resultados:
+            fallback_qs = (
+                Cancion.objects.select_related('album__artista')
+                .filter(titulo__icontains=query)
+                .order_by('titulo')[:10]
+            )
+            for obj in fallback_qs:
+                artista_nombre = ''
+                album_nombre = ''
+                imagen_url = ''
+                if obj.album:
+                    album_nombre = obj.album.titulo or ''
+                    imagen_url = obj.album.imagen_url or ''
+                    if obj.album.artista:
+                        artista_nombre = obj.album.artista.nombre or ''
+
+                resultados.append({
+                    'nombre': obj.titulo,
+                    'artista': artista_nombre,
+                    'album': album_nombre,
+                    'imagen': imagen_url,
+                    'spotify_id': obj.spotify_id,
+                    'preview_url': obj.preview_url if hasattr(obj, 'preview_url') else None,
+                    'generos': [],
+                })
+
     for cancion in resultados:
         titulo = cancion.get('nombre', '')
         cancion['nombre_trunc'] = titulo[:20] + "..." if len(titulo) > 20 else titulo
@@ -721,6 +870,7 @@ class UsuarioDetailAPI(generics.RetrieveAPIView):
 class PerfilDetailAPI(generics.RetrieveUpdateAPIView):
     serializer_class = PerfilSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def get_object(self):
         username = self.kwargs["username"]
@@ -766,22 +916,25 @@ class ArtistaDetailAPI(generics.RetrieveAPIView):
 def perfil_usuario(request, username):
     user = get_object_or_404(User, username=username)
     perfil, _ = Perfil.objects.get_or_create(usuario=user)
-    serializer = PerfilSerializer(perfil)
+    serializer = PerfilSerializer(perfil, context={"request": request})
     return Response(serializer.data)
 
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser, JSONParser])
 def editar_perfil(request):
     user = request.user
     perfil, _ = Perfil.objects.get_or_create(usuario=user)
 
-    data = request.data
-    perfil.fotoPerfil = data.get("fotoPerfil", perfil.fotoPerfil)
-    perfil.banner = data.get("banner", perfil.banner)
-    perfil.biografia = data.get("biografia", perfil.biografia)
-    perfil.save()
+    serializer = PerfilSerializer(
+        perfil,
+        data=request.data,
+        partial=True,
+        context={"request": request},
+    )
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
 
-    serializer = PerfilSerializer(perfil)
     return Response(serializer.data)
 
 ########################################################### SEGUIDORES ###########################################################
@@ -809,15 +962,20 @@ def seguidores_list(request, username):
     data = []
     for s in qs:
         u = s.seguidor
-        perfil = getattr(u, 'perfil', None)
-        foto = getattr(perfil, 'fotoPerfil', None) if perfil else None
+        try:
+            perfil = u.perfil
+        except Perfil.DoesNotExist:
+            perfil = None
+
+        foto_url = _build_avatar_url(perfil, request)
+
         is_following = False
         if request.user and request.user.is_authenticated:
             is_following = Seguimiento.objects.filter(seguidor=request.user, seguido=u).exists()
         data.append({
             'id': u.id,
             'username': u.username,
-            'fotoPerfil': foto,
+            'fotoPerfil': foto_url,
             'isFollowing': bool(is_following),
         })
     return Response(data)
@@ -834,15 +992,20 @@ def siguiendo_list(request, username):
     data = []
     for s in qs:
         u = s.seguido
-        perfil = getattr(u, 'perfil', None)
-        foto = getattr(perfil, 'fotoPerfil', None) if perfil else None
+        try:
+            perfil = u.perfil
+        except Perfil.DoesNotExist:
+            perfil = None
+
+        foto_url = _build_avatar_url(perfil, request)
+
         is_following = False
         if request.user and request.user.is_authenticated:
             is_following = Seguimiento.objects.filter(seguidor=request.user, seguido=u).exists()
         data.append({
             'id': u.id,
             'username': u.username,
-            'fotoPerfil': foto,
+            'fotoPerfil': foto_url,
             'isFollowing': bool(is_following),
         })
     return Response(data)
@@ -923,14 +1086,18 @@ def buscar_usuarios(request):
     if not q:
         return Response([])
     usuarios = User.objects.filter(username__icontains=q)
-    data = [
-        {
+    data = []
+    for u in usuarios:
+        try:
+            foto_url = _build_avatar_url(u.perfil, request)
+        except Perfil.DoesNotExist:
+            foto_url = None
+
+        data.append({
             "username": u.username,
             "email": u.email,
-            "fotoPerfil": getattr(u.perfil, "fotoPerfil", None)
-        }
-        for u in usuarios
-    ]
+            "fotoPerfil": foto_url,
+        })
     return Response(data)
 
 
@@ -1031,17 +1198,9 @@ def buscar_albums(request):
 
 # === PICKS (Your Picks) ===
 @api_view(["GET", "PUT"])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def picks_detail(request, username):
-    """Get or update the authenticated user's picks.
-
-    - GET: returns Perfil.picks for the user <username> (must match request.user)
-    - PUT: accepts JSON body {"picks": [slot0, slot1, slot2]} and stores in Perfil.picks
-      Each slot can be null or an object with keys: id, type, name, artist, imageUrl
-    """
-    if request.user.username != username:
-        return Response({"detail": "No autorizado"}, status=status.HTTP_403_FORBIDDEN)
-
+    """Expose profile picks for reading while keeping updates restricted."""
     user = get_object_or_404(User, username=username)
     perfil, _ = Perfil.objects.get_or_create(usuario=user)
 
@@ -1057,6 +1216,9 @@ def picks_detail(request, username):
         return Response({"picks": picks})
 
     # PUT
+    if not request.user.is_authenticated or request.user.username != username:
+        return Response({"detail": "No autorizado"}, status=status.HTTP_403_FORBIDDEN)
+
     data = request.data or {}
     incoming = data.get("picks", [None, None, None])
     # Validate structure: list of length up to 3; entries null or dict with allowed keys
