@@ -1,5 +1,4 @@
 import logging
-import os
 import time
 from threading import Lock
 
@@ -14,8 +13,8 @@ logger = logging.getLogger(__name__)
 try:
     sp = spotipy.Spotify(
         auth_manager=SpotifyClientCredentials(
-            client_id=os.environ.get('SPOTIPY_CLIENT_ID'),
-            client_secret=os.environ.get('SPOTIPY_CLIENT_SECRET')
+            client_id='a268e268074b4e02afea8d925786b006',
+            client_secret='a5ec174e5e304574a0ec5fb2590c4f12'
         ),
         requests_timeout=6,
         retries=0,
