@@ -35,7 +35,7 @@ function DetalleAlbum() {
     const fetchAlbum = useCallback(async () => {
         if (!spotify_id) return;
         try {
-            const response = await fetch(`http://127.0.0.1:8000/musica/api/album/${spotify_id}/`);
+            const response = await fetch(`${API_URL}/musica/api/album/${spotify_id}/`);
             if (!response.ok) throw new Error("Error cargando álbum");
             const data = await response.json();
 
@@ -100,7 +100,7 @@ function DetalleAlbum() {
             if (parentId) formData.append("parent_id", parentId);
 
             const response = await fetch(
-                `http://127.0.0.1:8000/musica/api/albumes/${album.id}/comentarios/`,
+                `${API_URL}/musica/api/albumes/${album.id}/comentarios/`,
                 {
                     method: "POST",
                     headers: {
@@ -151,7 +151,7 @@ function DetalleAlbum() {
             }
 
             const response = await fetch(
-                `http://127.0.0.1:8000/musica/api/comentario_album/${comentarioId}/borrar/`,
+                `${API_URL}/musica/api/comentario_album/${comentarioId}/borrar/`,
                 {
                     method: "DELETE",
                     headers: { Authorization: `Bearer ${accessToken}` },
@@ -188,7 +188,7 @@ function DetalleAlbum() {
 
         try {
             const response = await fetch(
-            `http://127.0.0.1:8000/musica/api/comentario_album/${comentarioId}/editar/`,
+            `${API_URL}/musica/api/comentario_album/${comentarioId}/editar/`,
             {
                 method: "PATCH",
                 headers: {
@@ -236,7 +236,7 @@ function DetalleAlbum() {
 
         try {
             const res = await fetch(
-            `http://127.0.0.1:8000/musica/api/album/${album.spotify_id}/valorar/`,
+            `${API_URL}/musica/api/album/${album.spotify_id}/valorar/`,
             {
                 method: "POST",
                 headers: {
