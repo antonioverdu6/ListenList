@@ -94,9 +94,9 @@ function Navbar() {
       {token && username && <Link to={`/perfil/${username}`}>Mi perfil</Link>}
 
       {token ? (
-        <button onClick={handleLogout} style={{ marginLeft: "2rem", background: "none", border: "none", color: "inherit", cursor: "pointer", font: "inherit" }}>
+        <a onClick={handleLogout} style={{ marginLeft: "2rem" }}>
           Cerrar sesión
-        </button>
+        </a>
       ) : (
         <Link to="/login" style={{ marginLeft: "2rem" }}>
           Iniciar sesión
