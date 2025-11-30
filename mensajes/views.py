@@ -35,8 +35,18 @@ class ShareViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.Gene
 
     def perform_create(self, serializer):
         share = serializer.save(sender=self.request.user)
-        self._create_notification(share)
-        self._broadcast_share("share_created", share)
+        # Robust: notificación y broadcast no deben romper creación
+        try:
+            self._create_notification(share)
+        except Exception as e:
+            # Silenciar para evitar 500 si hay error de notificación
+            import logging
+            logging.getLogger(__name__).warning("Error creando notificación share: %s", e)
+        try:
+            self._broadcast_share("share_created", share)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning("Error enviando broadcast share_created: %s", e)
         return share
 
     def create(self, request, *args, **kwargs):
@@ -106,13 +116,17 @@ class ShareViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.Gene
         if preview:
             contenido = f"{contenido}: {preview}"
 
-        Notificacion.objects.create(
-            destinatario=share.recipient,
-            tipo="message",
-            origen_user=share.sender,
-            contenido=contenido,
-            enlace=f"/mensajes?to={share.sender.username}&toId={share.sender.id}",
-        )
+        try:
+            Notificacion.objects.create(
+                destinatario=share.recipient,
+                tipo="message",
+                origen_user=share.sender,
+                contenido=contenido,
+                enlace=f"/mensajes?to={share.sender.username}&toId={share.sender.id}",
+            )
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning("Error creando Notificacion de share: %s", e)
 
     @staticmethod
     def _mark_message_notifications_read(share: Share, user) -> None:

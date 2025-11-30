@@ -1,2 +1,2 @@
-web: gunicorn redmusical.wsgi:application --bind 0.0.0.0:$PORT
+web: daphne -b 0.0.0.0 -p $PORT redmusical.asgi:application
 worker: python manage.py process_spotify_queue --loop
