@@ -120,9 +120,10 @@ function RegistroForm() {
 
 // Componente envolvente con reCAPTCHA
 function Registro() {
+  const siteKey = process.env.REACT_APP_RECAPTCHA_KEY;
   return (
     <GoogleReCaptchaProvider
-      reCaptchaKey="6Ld2us4rAAAAAOrN1RJLKykpjobReGh14xgor4cN"
+      reCaptchaKey={siteKey}
       scriptProps={{
         async: false,
         defer: false,
