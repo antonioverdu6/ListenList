@@ -1,9 +1,10 @@
 import { getCookie } from './csrf';
+import API_URL from '../config/api';
 
 export async function enviarComentario(cancionId, contenido) {
   const csrfToken = getCookie('csrftoken');
 
-  const response = await fetch(`/musica/cancion/${cancionId}/comentario/`, {
+  const response = await fetch(`${API_URL}/musica/cancion/${cancionId}/comentario/`, {
     method: 'POST',
     credentials: 'include', // envía la cookie de sesión
     headers: {
