@@ -31,9 +31,12 @@ DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
+    "redmusical.onrender.com",
+    "wastedwave.onrender.com",
+    "wastedlistenlist.netlify.app",
 ]
 
-# Añadir hosts de producción desde variable de entorno
+# Añadir hosts de producción desde variable de entorno 
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
@@ -91,6 +94,15 @@ CSRF_TRUSTED_ORIGINS = [
 # CORS Configuration
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
 ADDITIONAL_CORS = os.environ.get('FRONTEND_EXTRA_ORIGINS', '')
+
+# Ensure Netlify frontend host is allowed for websocket origin validator
+try:
+    from urllib.parse import urlparse
+    _fe = urlparse(FRONTEND_URL)
+    if _fe.hostname and _fe.hostname not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_fe.hostname)
+except Exception:
+    pass
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",

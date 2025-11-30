@@ -73,16 +73,15 @@ def _resolve_retry_seconds(exc, default_wait=30):
 
 import json
 import requests
+import os
 from django.http import JsonResponse
 from django.contrib.auth.models import User
 from .forms import RegistroForm
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 
-# Claves de reCAPTCHA
-RECAPTCHA_SECRET_KEY = "6LfHr84rAAAAAASOPXXZjT48Rrb3-q3-KT8M86JV"
-
-RECAPTCHA_SECRET_KEY = "6Ld2us4rAAAAAMGrIBYepnth0Py-1fNqGxMv-aw7"
+# Clave secreta reCAPTCHA desde configuración/entorno
+RECAPTCHA_SECRET_KEY = getattr(settings, 'RECAPTCHA_SECRET', None) or os.environ.get('RECAPTCHA_SECRET')
 
 @csrf_exempt 
 def registro(request):
@@ -95,13 +94,17 @@ def registro(request):
             if not captcha_token:
                 return JsonResponse({"error": "Captcha requerido"}, status=400)
 
-            captcha_response = requests.post(
-                "https://www.google.com/recaptcha/api/siteverify",
-                data={
-                    'secret': RECAPTCHA_SECRET_KEY,
-                    'response': captcha_token
-                }
-            ).json()
+            # Permitir bypass en desarrollo si no hay clave configurada
+            if settings.DEBUG and not RECAPTCHA_SECRET_KEY:
+                captcha_response = {"success": True, "score": 0.9}
+            else:
+                captcha_response = requests.post(
+                    "https://www.google.com/recaptcha/api/siteverify",
+                    data={
+                        'secret': RECAPTCHA_SECRET_KEY,
+                        'response': captcha_token
+                    }
+                ).json()
 
             print("Respuesta reCAPTCHA v3:", captcha_response)  # Para debug
 
