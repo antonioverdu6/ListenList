@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import "../styles/fondoBurbujas.css";
+import API_URL from "../config/api";
 
 export default function FondoBurbujas() {
   const [artistas, setArtistas] = useState([]);
@@ -8,11 +9,12 @@ export default function FondoBurbujas() {
   useEffect(() => {
     async function fetchArtistas() {
       try {
-        const res = await fetch("http://127.0.0.1:8000/musica/api/artistas/");
+        const res = await fetch(`${API_URL}/musica/api/artistas/`);
         const data = await res.json();
         const artistasConImagen = data.filter((a) => a.imagen_url);
         setArtistas(artistasConImagen.slice(0, 15));
       } catch (err) {
+        // eslint-disable-next-line no-console
         console.error("Error cargando artistas:", err);
       }
     }
