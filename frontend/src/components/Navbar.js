@@ -94,7 +94,13 @@ function Navbar() {
       {token && username && <Link to={`/perfil/${username}`}>Mi perfil</Link>}
 
       {token ? (
-        <a onClick={handleLogout} style={{ marginLeft: "2rem" }}>
+        <a
+          href="#logout"
+          onClick={(e) => { e.preventDefault(); handleLogout(e); }}
+          style={{ marginLeft: "2rem" }}
+          role="button"
+          aria-label="Cerrar sesión"
+        >
           Cerrar sesión
         </a>
       ) : (
