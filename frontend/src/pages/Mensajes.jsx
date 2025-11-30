@@ -193,7 +193,7 @@ function Mensajes() {
   const [threads, setThreads] = useState([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  // const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [activePartnerId, setActivePartnerId] = useState(null);
   const [composerText, setComposerText] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
