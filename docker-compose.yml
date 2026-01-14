@@ -16,6 +16,7 @@ services:
       - DJANGO_SETTINGS_MODULE=redmusical.settings
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - DEBUG=True
     depends_on:
       - redis
 

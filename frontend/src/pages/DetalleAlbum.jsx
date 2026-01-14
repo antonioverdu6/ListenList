@@ -4,12 +4,14 @@ import "../styles/styles_album.css";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { refreshAccessToken } from "../utils/auth";
 import NotificationPanel from "../components/NotificationPanel";
+import { useAuthModal } from "../context/AuthModalContext";
 
 function DetalleAlbum() {
     const { spotify_id } = useParams();
 
     // --- Hooks declarados primero ---
     const navigate = useNavigate();
+    const { openLogin } = useAuthModal();
     const meUsername = localStorage.getItem('username');
     const [searchQ, setSearchQ] = useState("");
     const [album, setAlbum] = useState(null);
@@ -73,7 +75,7 @@ function DetalleAlbum() {
 
         let accessToken = localStorage.getItem("access");
         if (!accessToken) {
-            alert("No hay token de acceso. Debes iniciar sesión.");
+            openLogin();
             return;
         }
 
@@ -138,7 +140,7 @@ function DetalleAlbum() {
     const handleBorrarComentario = async comentarioId => {
         let accessToken = localStorage.getItem("access");
         if (!accessToken) {
-            alert("Debes iniciar sesión para borrar un comentario");
+            openLogin();
             return;
         }
 
@@ -170,7 +172,8 @@ function DetalleAlbum() {
     const handleEditarComentario = async (comentarioId, nuevoTexto) => {
         let accessToken = localStorage.getItem("access");
         if (!accessToken) {
-            return alert("Debes iniciar sesión para editar.");
+            openLogin();
+            return;
         }
 
         // Refrescar token si ha expirado
@@ -220,7 +223,8 @@ function DetalleAlbum() {
     const handleRating = async puntuacion => {
         let accessToken = localStorage.getItem("access");
         if (!accessToken) {
-            return alert("Debes iniciar sesión para valorar.");
+            openLogin();
+            return;
         }
         try {
             const payload = JSON.parse(atob(accessToken.split(".")[1]));

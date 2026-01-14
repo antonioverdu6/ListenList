@@ -3,12 +3,14 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import NotificationPanel from "../components/NotificationPanel";
 import { refreshAccessToken } from "../utils/auth";
+import { useAuthModal } from "../context/AuthModalContext";
 import "../styles/styles_artista.css";
 import "../styles/styles_detalle.css"; // import shared detalle styles for comments layout
 
 function DetalleArtista() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { openLogin } = useAuthModal();
   const meUsername = localStorage.getItem('username');
   const [searchQ, setSearchQ] = useState("");
 
@@ -156,7 +158,7 @@ function DetalleArtista() {
 
     let accessToken = localStorage.getItem("access");
     if (!accessToken) {
-      alert("No hay token de acceso. Debes iniciar sesión.");
+      openLogin();
       return;
     }
 
@@ -214,7 +216,7 @@ function DetalleArtista() {
   const handleBorrarComentario = async (comentarioId) => {
     let accessToken = localStorage.getItem("access");
     if (!accessToken) {
-      alert("Debes iniciar sesión para borrar un comentario");
+      openLogin();
       return;
     }
 
@@ -246,7 +248,10 @@ function DetalleArtista() {
 
   const handleEditarComentario = async (comentarioId, nuevoTexto) => {
     let accessToken = localStorage.getItem("access");
-    if (!accessToken) return alert("Debes iniciar sesión para editar.");
+    if (!accessToken) {
+      openLogin();
+      return;
+    }
 
     try {
       const response = await fetch(`${API_URL}/musica/api/comentario_artista/${comentarioId}/editar/`, {
@@ -341,7 +346,10 @@ function DetalleArtista() {
                       onClick={async () => {
                         // Toggle follow estado para artista
                         let token = localStorage.getItem('access');
-                        if (!token) return alert('Debes iniciar sesión para seguir artistas.');
+                        if (!token) {
+                          openLogin();
+                          return;
+                        }
                         try {
                           // refrescar token si está expirado (similar a MiPerfil)
                           try {
@@ -405,7 +413,10 @@ function DetalleArtista() {
                       onClick={async () => {
                         // Toggle notificaciones local + POST a endpoint (puede ser ficticio)
                         let token = localStorage.getItem('access');
-                        if (!token) return alert('Debes iniciar sesión para activar notificaciones.');
+                        if (!token) {
+                          openLogin();
+                          return;
+                        }
                         try {
                           try {
                             const payload = JSON.parse(atob(token.split('.')[1]));

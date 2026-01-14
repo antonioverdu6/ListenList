@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import API_URL from '../config/api';
 import { useNavigate } from 'react-router-dom';
 import { refreshAccessToken } from '../utils/auth';
+import { useAuthModal } from '../context/AuthModalContext';
 import '../styles/styles_detalle.css';
 
 export default function NotificationPanel({ open, onClose, noGreen = true }) {
@@ -11,6 +12,7 @@ export default function NotificationPanel({ open, onClose, noGreen = true }) {
   const [visible, setVisible] = useState(Boolean(open));
   const [closing, setClosing] = useState(false);
   const navigate = useNavigate();
+  const { openLogin } = useAuthModal();
   const ANIM_MS = 220;
 
   const ensureToken = useCallback(async () => {
@@ -74,7 +76,10 @@ export default function NotificationPanel({ open, onClose, noGreen = true }) {
 
   async function marcarLeida(id, enlace) {
     const token = await ensureToken();
-    if (!token) return alert('Debes iniciar sesión');
+    if (!token) {
+      openLogin();
+      return;
+    }
     try {
       setNotifs(prev => prev.map(n => n.id === id ? { ...n, leido: true } : n));
       setUnread(prev => Math.max(0, prev - 1));
@@ -88,7 +93,10 @@ export default function NotificationPanel({ open, onClose, noGreen = true }) {
 
   async function marcarTodas() {
     const token = await ensureToken();
-    if (!token) return alert('Debes iniciar sesión');
+    if (!token) {
+      openLogin();
+      return;
+    }
     try {
       await fetch(`${API_URL}/musica/api/notificaciones/marcar_todas_leidas/`, {
         method: 'POST', headers: { Authorization: `Bearer ${token}` }

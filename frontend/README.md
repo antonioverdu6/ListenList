@@ -2,6 +2,33 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## reCAPTCHA v3 site key
+
+The registration page uses `react-google-recaptcha-v3`. The provider reads the key at build time from `process.env.REACT_APP_RECAPTCHA_KEY`.
+
+- Source: Create React App only injects env vars prefixed with `REACT_APP_` during the frontend build. This key must be set in the environment where the frontend is built.
+- It does not come from Render (backend). If the key is missing, the frontend build did not receive it.
+
+### Netlify (production)
+- Site settings → Build & deploy → Environment → Environment variables.
+- Add `REACT_APP_RECAPTCHA_KEY` with your Google reCAPTCHA v3 site key.
+- Redeploy the site so the variable is embedded in the build.
+- In Google reCAPTCHA admin, ensure allowed domains include `wastedwave.netlify.app`.
+
+### Local development
+- Create `frontend/.env` with:
+	```
+	REACT_APP_RECAPTCHA_KEY=your_site_key_here
+	```
+- Restart the dev server so CRA picks it up.
+
+### Backend verification
+- The backend (Render) verifies the `captchaToken` server-side using the secret key. This is separate from the site key and is never exposed to the frontend.
+- Ensure backend CORS allows the frontend origin.
+
+### Troubleshooting
+- If you see `[reCAPTCHA] REACT_APP_RECAPTCHA_KEY is missing` in the console on `/registro`, the build didn't have the env var. Check Netlify env vars and redeploy.
+
 ## Available Scripts
 
 In the project directory, you can run:

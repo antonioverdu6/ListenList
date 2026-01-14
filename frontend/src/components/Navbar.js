@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { refreshAccessToken } from "../utils/auth";
+import { useAuthModal } from "../context/AuthModalContext";
 import "../styles/navbar.css";
 import API_URL from "../config/api";
 
 function Navbar() {
   const navigate = useNavigate();
+  const { openLogin } = useAuthModal();
   const [unreadConversations, setUnreadConversations] = useState(0);
 
   useEffect(() => {
@@ -30,6 +32,7 @@ function Navbar() {
       try {
         let tokenToUse = access;
         let res = await requestWith(tokenToUse);
+        // Evitar ruido en consola por 401 esperado cuando el access ha caducado
         if (res.status === 401) {
           try {
             tokenToUse = await refreshAccessToken();
@@ -37,12 +40,15 @@ function Navbar() {
           } catch (err) {
             console.debug("No se pudo refrescar token para mensajes:", err);
             if (!cancelled) setUnreadConversations(0);
+            scheduleNext();
             return;
           }
         }
 
         if (!res.ok) {
-          if (!cancelled) console.debug("No se pudo obtener mensajes no leídos", res.status);
+          // Solo loguear si no es el 401 inicial (ya gestionado) o tras refresco sigue fallando
+          if (!cancelled && res.status !== 401) console.debug("No se pudo obtener mensajes no leídos", res.status);
+          scheduleNext();
           return;
         }
         const data = await res.json();
@@ -94,19 +100,9 @@ function Navbar() {
       {token && username && <Link to={`/perfil/${username}`}>Mi perfil</Link>}
 
       {token ? (
-        <a
-          href="#logout"
-          onClick={(e) => { e.preventDefault(); handleLogout(e); }}
-          style={{ marginLeft: "2rem" }}
-          role="button"
-          aria-label="Cerrar sesión"
-        >
-          Cerrar sesión
-        </a>
+        <a href="#logout" onClick={(e) => { e.preventDefault(); handleLogout(e); }} role="button" aria-label="Cerrar sesión">Cerrar sesión</a>
       ) : (
-        <Link to="/login" style={{ marginLeft: "2rem" }}>
-          Iniciar sesión
-        </Link>
+        <a href="#login" onClick={(e) => { e.preventDefault(); openLogin(); }} role="button" aria-label="Iniciar sesión">Iniciar sesión</a>
       )}
     </nav>
   );

@@ -6,6 +6,7 @@ import Footer from "../components/Footer";
 import NotificationPanel from "../components/NotificationPanel";
 import UserListPopover from "../components/UserListPopover";
 import { refreshAccessToken } from "../utils/auth";
+import { useAuthModal } from "../context/AuthModalContext";
 
 // URLs reales usadas por el buscador (canciones, álbumes, artistas)
 const API_URL_SONGS = `${API_URL}/musica/buscar_api/`;
@@ -36,6 +37,7 @@ function BackAndSearch() {
 function MiPerfil() {
   const { username } = useParams();
   const navigate = useNavigate();
+  const { openLogin } = useAuthModal();
   const meUsername = localStorage.getItem('username');
   const isOwnProfile = meUsername === username;
 
@@ -52,6 +54,9 @@ function MiPerfil() {
   const [avatarPreview, setAvatarPreview] = useState("");
   const [avatarFile, setAvatarFile] = useState(null);
   const avatarPreviewUrlRef = useRef(null);
+  const [bannerPreview, setBannerPreview] = useState("");
+  const [bannerFile, setBannerFile] = useState(null);
+  const bannerPreviewUrlRef = useRef(null);
   const [avatarRemoved, setAvatarRemoved] = useState(false);
   const [comentarios, setComentarios] = useState([]);
   const [artistasSeguidos, setArtistasSeguidos] = useState([]);
@@ -83,6 +88,10 @@ function MiPerfil() {
       if (avatarPreviewUrlRef.current) {
         URL.revokeObjectURL(avatarPreviewUrlRef.current);
         avatarPreviewUrlRef.current = null;
+      }
+      if (bannerPreviewUrlRef.current) {
+        URL.revokeObjectURL(bannerPreviewUrlRef.current);
+        bannerPreviewUrlRef.current = null;
       }
     };
   }, []);
@@ -166,6 +175,7 @@ function MiPerfil() {
           banner: data.banner || "",
           biografia: data.biografia || "",
         });
+        setBannerPreview(data.banner || "");
         if (avatarPreviewUrlRef.current) {
           URL.revokeObjectURL(avatarPreviewUrlRef.current);
           avatarPreviewUrlRef.current = null;
@@ -395,7 +405,10 @@ function MiPerfil() {
   // Función para seguir/dejar de seguir
   const handleToggleFollow = async () => {
     const tokenInfo = await ensureToken();
-    if (!tokenInfo) return alert('Debes iniciar sesión.');
+    if (!tokenInfo) {
+      openLogin();
+      return;
+    }
     const currentUser = tokenInfo.username || localStorage.getItem('username');
     if (currentUser === username) return;
 
@@ -436,6 +449,24 @@ function MiPerfil() {
     event.target.value = "";
   };
 
+  const handleBannerSelect = (event) => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Por favor selecciona una imagen válida.");
+      return;
+    }
+    if (bannerPreviewUrlRef.current) {
+      URL.revokeObjectURL(bannerPreviewUrlRef.current);
+      bannerPreviewUrlRef.current = null;
+    }
+    const objectUrl = URL.createObjectURL(file);
+    bannerPreviewUrlRef.current = objectUrl;
+    setBannerPreview(objectUrl);
+    setBannerFile(file);
+    event.target.value = "";
+  };
+
   const handleRemoveAvatar = () => {
     if (avatarPreviewUrlRef.current) {
       URL.revokeObjectURL(avatarPreviewUrlRef.current);
@@ -451,9 +482,15 @@ function MiPerfil() {
       URL.revokeObjectURL(avatarPreviewUrlRef.current);
       avatarPreviewUrlRef.current = null;
     }
+    if (bannerPreviewUrlRef.current) {
+      URL.revokeObjectURL(bannerPreviewUrlRef.current);
+      bannerPreviewUrlRef.current = null;
+    }
     setAvatarPreview(usuario.fotoPerfil || usuario.foto_perfil || "");
     setAvatarFile(null);
     setAvatarRemoved(false);
+    setBannerPreview(usuario.banner || "");
+    setBannerFile(null);
     setFormData({
       banner: usuario.banner || "",
       biografia: usuario.biografia || "",
@@ -466,6 +503,10 @@ function MiPerfil() {
       URL.revokeObjectURL(avatarPreviewUrlRef.current);
       avatarPreviewUrlRef.current = null;
     }
+    if (bannerPreviewUrlRef.current) {
+      URL.revokeObjectURL(bannerPreviewUrlRef.current);
+      bannerPreviewUrlRef.current = null;
+    }
     setFormData({
       banner: usuario.banner || "",
       biografia: usuario.biografia || "",
@@ -473,6 +514,8 @@ function MiPerfil() {
     setAvatarPreview(usuario.fotoPerfil || usuario.foto_perfil || "");
     setAvatarFile(null);
     setAvatarRemoved(false);
+    setBannerPreview(usuario.banner || "");
+    setBannerFile(null);
     setEditando(true);
   };
 
@@ -480,7 +523,10 @@ function MiPerfil() {
   const handleGuardar = async () => {
     try {
       let token = localStorage.getItem("access");
-      if (!token) return alert("Debes iniciar sesión.");
+      if (!token) {
+        openLogin();
+        return;
+      }
 
       // Refrescar token si expiró
       try {
@@ -493,9 +539,9 @@ function MiPerfil() {
       }
 
       const payload = new FormData();
-      if (typeof formData.banner === "string") {
-        payload.append("banner", formData.banner);
-      }
+      // if (typeof formData.banner === "string") {
+      //   payload.append("banner", formData.banner);
+      // }
       if (typeof formData.biografia === "string") {
         payload.append("biografia", formData.biografia);
       }
@@ -503,6 +549,9 @@ function MiPerfil() {
         payload.append("fotoPerfil", avatarFile);
       } else if (avatarRemoved) {
         payload.append("remove_avatar", "1");
+      }
+      if (bannerFile) {
+        payload.append("banner", bannerFile);
       }
 
       const response = await fetch(`${API_URL}/musica/api/usuarios/${username}/`, {
@@ -528,9 +577,15 @@ function MiPerfil() {
         URL.revokeObjectURL(avatarPreviewUrlRef.current);
         avatarPreviewUrlRef.current = null;
       }
+      if (bannerPreviewUrlRef.current) {
+        URL.revokeObjectURL(bannerPreviewUrlRef.current);
+        bannerPreviewUrlRef.current = null;
+      }
       setAvatarFile(null);
       setAvatarRemoved(false);
       setAvatarPreview(data.fotoPerfil || data.foto_perfil || "");
+      setBannerFile(null);
+      setBannerPreview(data.banner || "");
       setEditando(false);
     } catch (err) {
       console.error("Error guardando perfil:", err);
@@ -753,7 +808,10 @@ function MiPerfil() {
   // Toggle follow/unfollow for a given target username (called from the popover)
   const handleToggleFollowUser = async (targetUsername) => {
     const tokenInfo = await ensureToken();
-    if (!tokenInfo) return alert('Debes iniciar sesión para seguir a alguien.');
+    if (!tokenInfo) {
+      openLogin();
+      return;
+    }
     try {
       const res = await fetch(`${API_URL}/musica/api/toggle_seguir/${targetUsername}/`, {
         method: 'POST',
@@ -954,7 +1012,7 @@ function MiPerfil() {
       <div className="perfil-container">
         <div
           className="perfil-banner"
-          style={{ backgroundImage: `url(${formData.banner || banner})` }}
+          style={{ backgroundImage: `url(${bannerPreview || formData.banner || banner})` }}
         />
 
         <div className="perfil-header">
@@ -1025,19 +1083,6 @@ function MiPerfil() {
               <>
                 <label htmlFor="avatar-upload">Foto de perfil</label>
                 <div className="avatar-edit-controls">
-                  <div className="perfil-avatar-wrapper">
-                    {shouldShowAvatarFallback ? (
-                      <div className="perfil-avatar perfil-avatar-fallback" aria-hidden="true">
-                        {avatarInitial}
-                      </div>
-                    ) : (
-                      <img
-                        src={fotoPerfil}
-                        alt="Vista previa de la foto"
-                        className="perfil-avatar"
-                      />
-                    )}
-                  </div>
                   <div className="avatar-actions">
                     <label className="avatar-upload-label" htmlFor="avatar-upload">
                       <span>Elegir imagen</span>
@@ -1061,16 +1106,21 @@ function MiPerfil() {
                   </div>
                 </div>
 
-                <label htmlFor="banner-url">URL banner</label>
-                <input
-                  id="banner-url"
-                  type="text"
-                  value={formData.banner}
-                  onChange={(e) =>
-                    setFormData({ ...formData, banner: e.target.value })
-                  }
-                  placeholder="https://..."
-                />
+                <label htmlFor="banner-upload">Banner</label>
+                <div className="avatar-edit-controls">
+                  <div className="avatar-actions">
+                    <label className="avatar-upload-label" htmlFor="banner-upload">
+                      <span>Elegir banner</span>
+                      <input
+                        id="banner-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleBannerSelect}
+                        className="avatar-file-input"
+                      />
+                    </label>
+                  </div>
+                </div>
 
                 <label htmlFor="perfil-biografia">Biografía</label>
                 <textarea

@@ -282,6 +282,7 @@ class PerfilSerializer(serializers.ModelSerializer):
     valoraciones = serializers.SerializerMethodField()
     picks = serializers.JSONField(required=False)
     fotoPerfil = serializers.ImageField(required=False, allow_null=True)
+    banner = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = Perfil
@@ -367,6 +368,29 @@ class PerfilSerializer(serializers.ModelSerializer):
                     data["fotoPerfil"] = None
         else:
             data["fotoPerfil"] = None
+
+        banner_field = getattr(instance, "banner", None)
+        if banner_field:
+            name = getattr(banner_field, "name", None)
+            name = _fix_scheme(name)
+            if isinstance(name, str) and name.startswith(("http://", "https://")):
+                data["banner"] = name
+            else:
+                try:
+                    url = banner_field.url if hasattr(banner_field, "url") else str(banner_field)
+                except (ValueError, OSError):
+                    url = None
+                if url:
+                    url = _fix_scheme(url)
+                    if isinstance(url, str) and url.startswith(("http://", "https://")):
+                        data["banner"] = url
+                    else:
+                        data["banner"] = request.build_absolute_uri(url) if request else url
+                else:
+                    data["banner"] = None
+        else:
+            data["banner"] = None
+
         return data
 
     def update(self, instance, validated_data):
@@ -396,6 +420,15 @@ class PerfilSerializer(serializers.ModelSerializer):
                 except Exception:
                     pass
             instance.fotoPerfil = new_avatar
+
+        new_banner = validated_data.pop("banner", serializers.empty)
+        if new_banner is not serializers.empty:
+            if getattr(instance, "banner", None):
+                try:
+                    instance.banner.delete(save=False)
+                except Exception:
+                    pass
+            instance.banner = new_banner
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)

@@ -4,6 +4,7 @@ import "../styles/styles_detalle.css";
 import { refreshAccessToken } from "../utils/auth";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import NotificationPanel from "../components/NotificationPanel";
+import { useAuthModal } from "../context/AuthModalContext";
 
 
 
@@ -12,6 +13,7 @@ function DetalleCancion() {
   const { spotifyId } = useParams();
   const [cancion, setCancion] = useState(null);
   const navigate = useNavigate();
+  const { openLogin } = useAuthModal();
   const meUsername = localStorage.getItem('username');
   const [searchQ, setSearchQ] = useState("");
   const [letra, setLetra] = useState("");
@@ -112,7 +114,7 @@ function DetalleCancion() {
   const handleRating = async (puntuacion) => {
     let accessToken = localStorage.getItem("access");
     if (!accessToken) {
-      alert("Debes iniciar sesión para valorar.");
+      openLogin();
       return;
     }
 
@@ -217,7 +219,7 @@ function DetalleCancion() {
 
     let accessToken = localStorage.getItem("access");
     if (!accessToken) {
-      alert("No hay token de acceso. Debes iniciar sesión.");
+      openLogin();
       return;
     }
 
@@ -284,7 +286,7 @@ function DetalleCancion() {
   const handleBorrarComentario = async (comentarioId) => {
     let accessToken = localStorage.getItem("access");
     if (!accessToken) {
-      alert("Debes iniciar sesión para borrar un comentario");
+      openLogin();
       return;
     }
 
@@ -317,7 +319,10 @@ function DetalleCancion() {
 
   const handleEditarComentario = async (comentarioId, nuevoTexto) => {
     const accessToken = localStorage.getItem("access");
-    if (!accessToken) return alert("Debes iniciar sesión para editar.");
+    if (!accessToken) {
+      openLogin();
+      return;
+    }
 
     try {
       const response = await fetch(

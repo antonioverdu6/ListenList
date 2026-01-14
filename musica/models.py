@@ -169,7 +169,7 @@ class ValoracionArtista(Valoracion):
 class Perfil(models.Model):
     usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil')
     fotoPerfil = models.ImageField(upload_to="avatars/", blank=True, null=True)
-    banner = models.URLField(blank=True, null=True)
+    banner = models.ImageField(upload_to="banners/", blank=True, null=True)
     biografia = models.TextField(blank=True, null=True)
     # Persist user "Your Picks" as a small JSON blob
     # Structure example: [{"type":"song","id":"spotify_id","name":"...","imageUrl":"..."}, ...]
