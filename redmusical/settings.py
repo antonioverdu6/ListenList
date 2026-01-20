@@ -41,6 +41,12 @@ RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
+# --- CAMBIO AQUÍ: Configuración de Seguridad para Render ---
+# Esto le dice a Django que confíe en que Render maneja el HTTPS
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+# -----------------------------------------------------------
 
 # Application definition
 
@@ -52,7 +58,11 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    # --- CAMBIO AQUÍ: Cloudinary ---
+    'cloudinary_storage',  # <--- IMPORTANTE: Poner antes de staticfiles
     'django.contrib.staticfiles',
+    'cloudinary',          # <--- Añadir esto
+    # -------------------------------
     'musica',
     'mensajes',
     'rest_framework',
@@ -238,8 +248,27 @@ STATICFILES_DIRS = []
 # WhiteNoise configuration
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# WhiteNoise configuration (Esto déjalo como está para tus CSS/JS)
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# --- CAMBIO AQUÍ: Configuración de Media con Cloudinary ---
+# Esto se encargará de las subidas de imágenes de usuarios
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
+}
+
+# Indicamos a Django que use Cloudinary para guardar archivos subidos
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+# La URL base ahora será la de Cloudinary
+MEDIA_URL = '/media/'  
+# ----------------------------------------------------------
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
