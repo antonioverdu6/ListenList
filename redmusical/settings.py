@@ -252,7 +252,8 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # WhiteNoise configuration (Esto déjalo como está para tus CSS/JS)
 # PON ESTO (Solución):
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+STATICFILES_STORAGE = 'whitenoise.storage.StaticFilesStorage'
+
 # --- CAMBIO AQUÍ: Configuración de Media con Cloudinary ---
 # Esto se encargará de las subidas de imágenes de usuarios
 CLOUDINARY_STORAGE = {
